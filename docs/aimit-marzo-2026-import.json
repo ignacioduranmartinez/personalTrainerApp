@@ -1,0 +1,224 @@
+{
+  "name": "Aimit - Marzo 2026",
+  "weeks": [
+    {
+      "days": [
+        {
+          "label": "Lunes",
+          "exercises": [
+            {
+              "name": "Sentadilla",
+              "sets": 3,
+              "reps": "6-8",
+              "intensity": "75-80%",
+              "notes": "Descanso entre series: 2'",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/-Be-IO1C2JQ" }
+            },
+            {
+              "name": "Hip Thrust (Pausa 2\" arriba)",
+              "sets": 3,
+              "reps": "8-10",
+              "intensity": "70-75%",
+              "notes": "Descanso entre series: 2'"
+            },
+            {
+              "name": "Abducción de Cadera",
+              "sets": 3,
+              "reps": "15",
+              "intensity": "Esfuerzo moderado",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Extensión Cuádriceps",
+              "sets": 2,
+              "reps": "12",
+              "intensity": "Esfuerzo moderado",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Superserie abs: Planchas estandar + Elevación Piernas",
+              "sets": 3,
+              "reps": "15",
+              "notes": "Descanso entre series: 60''"
+            },
+            {
+              "name": "METCON: 5 Rondas de 15 KB Swings + 8 Saltos al cajón (descanso mínimo)",
+              "sets": 1,
+              "reps": "5 rondas",
+              "notes": "Descanso mínimo entre rondas"
+            }
+          ]
+        },
+        {
+          "label": "Martes",
+          "exercises": [
+            {
+              "name": "Press Banca",
+              "sets": 3,
+              "reps": "8",
+              "intensity": "70-75%",
+              "notes": "Descanso entre series: 2'"
+            },
+            {
+              "name": "Press Superior Mancuernas",
+              "sets": 3,
+              "reps": "10",
+              "intensity": "65-70%",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Press Hombro Mancuernas",
+              "sets": 3,
+              "reps": "12",
+              "intensity": "60-65%",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Elevaciones Laterales Polea",
+              "sets": 3,
+              "reps": "12",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Extensión Tríceps Cuerda",
+              "sets": 3,
+              "reps": "12",
+              "notes": "Descanso entre series: 60''",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/OXqqm8OIZoE" }
+            },
+            {
+              "name": "Flexión Diamante (rodillas en suelo)",
+              "sets": 2,
+              "reps": "Fallo",
+              "intensity": "Peso corporal",
+              "notes": "Descanso entre series: 60''",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/4NWWB0f0vzQ" }
+            },
+            {
+              "name": "Cardio",
+              "sets": 1,
+              "reps": "200 kcal",
+              "notes": "Cinta 6km/h - 6.5km/h con pendiente"
+            }
+          ]
+        },
+        {
+          "label": "Miércoles",
+          "exercises": [
+            { "name": "NATACIÓN", "sets": 1, "reps": "-", "notes": "Día de natación" }
+          ]
+        },
+        {
+          "label": "Jueves",
+          "exercises": [
+            {
+              "name": "Peso Muerto Rumano",
+              "sets": 3,
+              "reps": "6-8",
+              "intensity": "70-75%",
+              "notes": "Descanso entre series: 2'",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/IiOchifslCI" }
+            },
+            {
+              "name": "Sentadilla Búlgara",
+              "sets": 3,
+              "reps": "10-12",
+              "intensity": "70%",
+              "notes": "Descanso entre series: 2'",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/QjP9g7M_Idg" }
+            },
+            {
+              "name": "Patada Gluteo",
+              "sets": 3,
+              "reps": "12",
+              "intensity": "60%",
+              "notes": "Descanso entre series: 90''",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/cytfxsIK_Hk" }
+            },
+            {
+              "name": "Curl Femoral",
+              "sets": 2,
+              "reps": "15",
+              "intensity": "60%",
+              "notes": "Descanso entre series: 90''",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/FclsfZvytqM" }
+            },
+            {
+              "name": "Prensa de Piernas",
+              "sets": 2,
+              "reps": "15",
+              "intensity": "60-65%",
+              "notes": "Descanso entre series: 60''",
+              "demo": { "videoUrl": "https://www.youtube.com/watch?v=aQnFcHZGNuQ" }
+            },
+            {
+              "name": "Superserie abs: escalador (15) + plancha lateral (fallo)",
+              "sets": 3,
+              "reps": "-",
+              "notes": "Descanso entre series: 60''"
+            },
+            {
+              "name": "METCON: 8 series de sprint (30 segundos) + 90 segundos a 6km/h",
+              "sets": 1,
+              "reps": "8 series",
+              "notes": "Sprint 30 seg + 90 seg a 6km/h"
+            }
+          ]
+        },
+        {
+          "label": "Viernes",
+          "exercises": [
+            {
+              "name": "Remo con Barra",
+              "sets": 3,
+              "reps": "10",
+              "intensity": "65-70%",
+              "notes": "Descanso entre series: 2'"
+            },
+            {
+              "name": "Jalón cerrado al Pecho",
+              "sets": 3,
+              "reps": "12",
+              "intensity": "60%",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Remo Gironda (Pausa 2\" atrás)",
+              "sets": 3,
+              "reps": "12",
+              "intensity": "65%",
+              "notes": "Descanso entre series: 90''"
+            },
+            {
+              "name": "Elevación espalda baja",
+              "sets": 2,
+              "reps": "12",
+              "notes": "Descanso entre series: 60''",
+              "demo": { "videoUrl": "https://www.youtube.com/shorts/NF4vmoXV5ys" }
+            },
+            {
+              "name": "Curl Bíceps Polea",
+              "sets": 2,
+              "reps": "12",
+              "notes": "Descanso entre series: 60''"
+            },
+            {
+              "name": "Curl Inclinado Mancuernas",
+              "sets": 2,
+              "reps": "15",
+              "notes": "Descanso entre series: 60''"
+            },
+            {
+              "name": "Cardio",
+              "sets": 1,
+              "reps": "200 kcal",
+              "notes": "Elíptica"
+            }
+          ]
+        },
+        { "label": "Sábado", "exercises": [] },
+        { "label": "Domingo", "exercises": [] }
+      ]
+    }
+  ]
+}
