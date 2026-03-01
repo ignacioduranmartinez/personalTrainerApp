@@ -96,13 +96,15 @@ export async function startWorkoutToday(routineId: string, routineDayIndex: numb
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
   const forDate = new Date().toISOString().slice(0, 10)
+  const now = new Date().toISOString()
   const row = {
     user_id: user.id,
     routine_id: routineId,
     for_date: forDate,
     routine_day_index: routineDayIndex,
     session_notes: null,
-    finished_at: null
+    finished_at: null,
+    started_at: now
   }
 
   const { error: upsertError } = await supabase
@@ -124,7 +126,8 @@ export async function startWorkoutToday(routineId: string, routineDayIndex: numb
       .update({
         routine_day_index: routineDayIndex,
         session_notes: null,
-        finished_at: null
+        finished_at: null,
+        started_at: now
       })
       .eq('user_id', user.id)
       .eq('routine_id', routineId)
@@ -135,16 +138,33 @@ export async function startWorkoutToday(routineId: string, routineDayIndex: numb
   return { error: insertErr?.message ?? null }
 }
 
-/** Entrenamiento finalizado: marca la sesión de hoy como terminada y guarda las notas de sesión. */
+/** Entrenamiento finalizado: marca la sesión como terminada, guarda notas y duración (desde started_at). */
 export async function finishWorkoutToday(routineId: string, sessionNotes?: string): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
   const forDate = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+
+  const { data: row } = await supabase
+    .from('workout_log')
+    .select('started_at, created_at')
+    .eq('user_id', user.id)
+    .eq('routine_id', routineId)
+    .eq('for_date', forDate)
+    .maybeSingle()
+
+  const r = row as { started_at?: string | null; created_at: string } | null
+  const startedAt = r?.started_at ?? r?.created_at
+  const durationSeconds = startedAt
+    ? Math.round((now.getTime() - new Date(startedAt).getTime()) / 1000)
+    : null
+
   const { error } = await supabase
     .from('workout_log')
     .update({
-      finished_at: new Date().toISOString(),
-      session_notes: sessionNotes ?? null
+      finished_at: now.toISOString(),
+      session_notes: sessionNotes ?? null,
+      duration_seconds: durationSeconds
     })
     .eq('user_id', user.id)
     .eq('routine_id', routineId)
@@ -199,7 +219,7 @@ export function useHistoryForDay(
     }
     const { data: logs, error: logErr } = await supabase
       .from('workout_log')
-      .select('for_date, session_notes')
+      .select('for_date, session_notes, duration_seconds')
       .eq('user_id', user.id)
       .eq('routine_id', routineId)
       .eq('routine_day_index', routineDayIndex)
@@ -212,7 +232,7 @@ export function useHistoryForDay(
       return
     }
 
-    const dates = (logs as { for_date: string; session_notes: string | null }[]).map((r) => r.for_date)
+    const dates = (logs as { for_date: string; session_notes: string | null; duration_seconds: number | null }[]).map((r) => r.for_date)
     const notesByDate = new Map<string, Map<string, string | null>>()
     if (ids.length > 0) {
       const { data: notes } = await supabase
@@ -231,9 +251,10 @@ export function useHistoryForDay(
     const nameById = new Map<string, string>()
     exercises.forEach((e) => { if (e.id) nameById.set(e.id, e.name) })
 
-    const past: PastSession[] = (logs as { for_date: string; session_notes: string | null }[]).map((row) => ({
+    const past: PastSession[] = (logs as { for_date: string; session_notes: string | null; duration_seconds: number | null }[]).map((row) => ({
       for_date: row.for_date,
       session_notes: row.session_notes,
+      duration_seconds: row.duration_seconds ?? null,
       exerciseNotes: exercises.map((ex) => ({
         exerciseName: ex.name,
         note: ex.id ? notesByDate.get(row.for_date)?.get(ex.id) ?? null : null

@@ -67,6 +67,8 @@ create table if not exists public.workout_log (
   session_notes text,
   created_at timestamptz default now(),
   finished_at timestamptz,
+  started_at timestamptz,
+  duration_seconds int,
   unique(user_id, routine_id, for_date)
 );
 

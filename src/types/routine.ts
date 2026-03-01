@@ -47,12 +47,17 @@ export interface WorkoutLog {
   created_at: string
   /** null = sesión empezada pero no finalizada; con valor = sesión finalizada */
   finished_at: string | null
+  /** Cuándo se pulsó "Empezar este entrenamiento" */
+  started_at?: string | null
+  /** Duración en segundos (desde started_at hasta finished_at); solo cuando está finalizada */
+  duration_seconds?: number | null
 }
 
 /** Sesión pasada con notas por ejercicio (para histórico) */
 export interface PastSession {
   for_date: string
   session_notes: string | null
+  duration_seconds: number | null
   exerciseNotes: Array< { exerciseName: string; note: string | null } >
 }
 

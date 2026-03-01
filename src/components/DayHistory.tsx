@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useHistoryForDay } from '../hooks/useWorkoutLog'
+import { formatDuration } from '../lib/restTimer'
 import type { Exercise } from '../types/routine'
 
 interface DayHistoryProps {
@@ -39,6 +40,11 @@ export function DayHistory({ routineId, routineDayIndex, exercises }: DayHistory
                   year: 'numeric'
                 })}
               </p>
+              {s.duration_seconds != null && s.duration_seconds > 0 && (
+                <p className="text-amber-400/90 text-sm mt-0.5">
+                  Duración: {formatDuration(s.duration_seconds)}
+                </p>
+              )}
               {s.session_notes && (
                 <p className="text-slate-400 text-sm mt-1">{s.session_notes}</p>
               )}

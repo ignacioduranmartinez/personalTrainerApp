@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useActiveRoutine } from '../hooks/useRoutines'
 import { useWorkoutLogsInRange, logWorkoutOnDate } from '../hooks/useWorkoutLog'
 import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
+import { formatDuration } from '../lib/restTimer'
 
 function getMonthStartEnd(year: number, month: number): { start: string; end: string } {
   const start = new Date(year, month - 1, 1)
@@ -46,10 +47,14 @@ export default function Calendar() {
   )
   const linearDays = activeRoutine ? getLinearDays(activeRoutine) : []
   const entriesByDate = useMemo(() => {
-    const m = new Map<string, { routine_day_index: number; session_notes: string | null }>()
+    const m = new Map<string, { routine_day_index: number; session_notes: string | null; duration_seconds: number | null }>()
     for (const e of entries) {
       if (e.finished_at != null) {
-        m.set(e.for_date, { routine_day_index: e.routine_day_index, session_notes: e.session_notes })
+        m.set(e.for_date, {
+          routine_day_index: e.routine_day_index,
+          session_notes: e.session_notes,
+          duration_seconds: e.duration_seconds ?? null
+        })
       }
     }
     return m
@@ -168,6 +173,11 @@ export default function Calendar() {
                   <p className="text-slate-400 text-sm">
                     Entreno: <strong>{selectedLabel}</strong>
                   </p>
+                  {selectedEntry.duration_seconds != null && selectedEntry.duration_seconds > 0 && (
+                    <p className="text-amber-400/90 text-sm mt-1">
+                      Duración: {formatDuration(selectedEntry.duration_seconds)}
+                    </p>
+                  )}
                   {selectedEntry.session_notes && (
                     <p className="text-slate-300 text-sm mt-2">{selectedEntry.session_notes}</p>
                   )}
