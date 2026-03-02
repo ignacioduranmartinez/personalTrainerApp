@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useExerciseNotes } from '../hooks/useExerciseNotes'
 import { updateExerciseDemo, updateExerciseRest } from '../lib/routineDb'
@@ -35,10 +35,16 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { note, setNote, saveNote, saving } = useExerciseNotes(routineExerciseId ?? null, forDate)
 
-  const displayVideoUrl = demoVideoUrl || exercise.demo?.videoUrl
+  const displayVideoUrl = demoVideoUrl || exercise.demo?.videoUrl ?? ''
+  const hasVideo = displayVideoUrl.length > 0
   const displayImageUrl = demoImageUrl || exercise.demo?.imageUrl
   const hasDemo = displayImageUrl || displayVideoUrl
   const displayRestSeconds = restSeconds ?? exercise.restSeconds
+
+  useEffect(() => {
+    if (!showEditDemo) setDemoVideoUrl(exercise.demo?.videoUrl ?? '')
+    if (!showEditImage) setDemoImageUrl(exercise.demo?.imageUrl ?? '')
+  }, [exercise.demo?.videoUrl, exercise.demo?.imageUrl, showEditDemo, showEditImage])
 
   function openDemo() {
     const url = displayVideoUrl || exercise.demo?.videoUrl
@@ -179,8 +185,8 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
               restSeconds={displayRestSeconds ?? undefined}
               notes={exercise.notes}
             />
-            {!displayImageUrl && displayVideoUrl && (
-              <span className="mt-2 inline-flex items-center gap-2">
+            {!displayImageUrl && hasVideo && (
+              <span className="mt-2 inline-flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={openDemo}
@@ -193,20 +199,16 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                     type="button"
                     onClick={handleRemoveVideo}
                     disabled={savingDemo}
-                    className="rounded p-0.5 text-red-400 hover:bg-red-400/20 hover:text-red-300 disabled:opacity-50"
+                    className="rounded px-2 py-0.5 text-xs text-red-400 hover:bg-red-400/20 hover:text-red-300 disabled:opacity-50 border border-red-400/50"
                     title="Quitar vídeo"
-                    aria-label="Quitar vídeo"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    Quitar vídeo
                   </button>
                 )}
               </span>
             )}
-            {hasDemo && displayImageUrl && (
-              <span className="mt-2 inline-flex items-center gap-2">
+            {hasDemo && displayImageUrl && hasVideo && (
+              <span className="mt-2 inline-flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={openDemo}
@@ -214,19 +216,15 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                 >
                   Ver vídeo de muestra
                 </button>
-                {editable && routineExerciseId && displayVideoUrl && (
+                {editable && routineExerciseId && (
                   <button
                     type="button"
                     onClick={handleRemoveVideo}
                     disabled={savingDemo}
-                    className="rounded p-0.5 text-red-400 hover:bg-red-400/20 hover:text-red-300 disabled:opacity-50"
+                    className="rounded px-2 py-0.5 text-xs text-red-400 hover:bg-red-400/20 hover:text-red-300 disabled:opacity-50 border border-red-400/50"
                     title="Quitar vídeo"
-                    aria-label="Quitar vídeo"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    Quitar vídeo
                   </button>
                 )}
               </span>
@@ -243,9 +241,9 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                       }}
                       className="block text-xs text-slate-500 hover:text-slate-400"
                     >
-                      {displayVideoUrl ? 'Editar enlace al vídeo' : 'Añadir enlace al vídeo de muestra'}
+                      {hasVideo ? 'Editar enlace al vídeo' : 'Añadir enlace al vídeo de muestra'}
                     </button>
-                    {displayVideoUrl && (
+                    {hasVideo && (
                       <>
                         <button
                           type="button"
