@@ -35,7 +35,7 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { note, setNote, saveNote, saving } = useExerciseNotes(routineExerciseId ?? null, forDate)
 
-  const displayVideoUrl = demoVideoUrl || exercise.demo?.videoUrl ?? ''
+  const displayVideoUrl = (demoVideoUrl || exercise.demo?.videoUrl) ?? ''
   const hasVideo = displayVideoUrl.length > 0
   const displayImageUrl = demoImageUrl || exercise.demo?.imageUrl
   const hasDemo = displayImageUrl || displayVideoUrl
