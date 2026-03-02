@@ -48,7 +48,7 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
 
   function openDemo() {
     const url = displayVideoUrl || exercise.demo?.videoUrl
-    if (url) window.open(url, '_blank', 'noopener')
+    if (url && String(url).trim()) window.open(url, '_blank', 'noopener')
   }
 
   async function handleSaveDemo() {
@@ -146,7 +146,7 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                   className="w-full h-full object-cover"
                 />
               </Link>
-            ) : (
+            ) : hasVideo ? (
               <button
                 type="button"
                 onClick={openDemo}
@@ -158,6 +158,14 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                   className="w-full h-full object-cover"
                 />
               </button>
+            ) : (
+              <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-slate-700 border border-slate-600">
+                <img
+                  src={displayImageUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </div>
             )
           )}
           <div className="flex-1 min-w-0">
