@@ -14,6 +14,7 @@ import Calendar from './pages/Calendar'
 import Manage from './pages/Manage'
 import Today from './pages/Today'
 import ExerciseFicha from './pages/ExerciseFicha'
+import Stats from './pages/Stats'
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -52,6 +53,7 @@ function App() {
         <Route path="routines/:id" element={<RoutineDetail />} />
         <Route path="review" element={<RoutineReview />} />
         <Route path="calendar" element={<Calendar />} />
+        <Route path="stats" element={<Stats />} />
         <Route path="manage" element={<Manage />} />
         <Route path="exercise/:id" element={<ExerciseFicha />} />
       </Route>

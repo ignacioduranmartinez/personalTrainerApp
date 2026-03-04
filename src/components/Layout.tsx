@@ -39,6 +39,14 @@ export default function Layout() {
               Calendario
             </NavLink>
             <NavLink
+              to="/stats"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
+              }
+            >
+              Estadísticas
+            </NavLink>
+            <NavLink
               to="/manage"
               className={({ isActive }) =>
                 `px-3 py-2 rounded-lg text-sm font-medium ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
