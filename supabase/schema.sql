@@ -41,6 +41,8 @@ create table if not exists public.exercise_notes (
   routine_exercise_id uuid references public.routine_exercises(id) on delete cascade not null,
   for_date date not null,
   note text,
+  top_weight numeric,
+  top_reps int,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   unique(user_id, routine_exercise_id, for_date)

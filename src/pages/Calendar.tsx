@@ -3,6 +3,7 @@ import { useActiveRoutine } from '../hooks/useRoutines'
 import { useWorkoutLogsInRange, logWorkoutOnDate } from '../hooks/useWorkoutLog'
 import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
 import { formatDuration } from '../lib/restTimer'
+import { useSessionExerciseNotes } from '../hooks/useSessionExerciseNotes'
 
 function getMonthStartEnd(year: number, month: number): { start: string; end: string } {
   const start = new Date(year, month - 1, 1)
@@ -79,6 +80,16 @@ export default function Calendar() {
   const selectedEntry = selectedDate ? entriesByDate.get(selectedDate) : null
   const selectedLabel =
     selectedEntry != null ? getDayDisplayLabel(selectedEntry.routine_day_index) : null
+  const selectedExercises =
+    selectedEntry != null && linearDays[selectedEntry.routine_day_index]
+      ? linearDays[selectedEntry.routine_day_index].exercises
+      : []
+
+  const { notes: sessionExerciseNotes, loading: sessionNotesLoading } = useSessionExerciseNotes(
+    activeRoutine?.id ?? null,
+    selectedDate,
+    selectedExercises.map((e) => ({ id: e.id, name: e.name }))
+  )
 
   async function handleLogForDate() {
     if (!activeRoutine || selectedDate == null || loggingDayIndex == null) return
@@ -180,6 +191,25 @@ export default function Calendar() {
                   )}
                   {selectedEntry.session_notes && (
                     <p className="text-slate-300 text-sm mt-2">{selectedEntry.session_notes}</p>
+                  )}
+                  {selectedExercises.length > 0 && !sessionNotesLoading && (
+                    <div className="mt-3">
+                      <p className="text-slate-400 text-xs mb-1">Notas por ejercicio:</p>
+                      <ul className="space-y-1 text-sm">
+                        {sessionExerciseNotes.some((n) => n.note) ? (
+                          sessionExerciseNotes
+                            .filter((n) => n.note)
+                            .map((n) => (
+                              <li key={n.exerciseName} className="text-slate-300">
+                                <span className="font-medium">{n.exerciseName}:</span>{' '}
+                                {n.note}
+                              </li>
+                            ))
+                        ) : (
+                          <li className="text-slate-500">Sin notas por ejercicio.</li>
+                        )}
+                      </ul>
+                    </div>
                   )}
                 </>
               ) : (

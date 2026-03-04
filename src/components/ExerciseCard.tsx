@@ -33,7 +33,18 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
   const [removeVideoError, setRemoveVideoError] = useState<string | null>(null)
   const [savingRest, setSavingRest] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { note, setNote, saveNote, saving } = useExerciseNotes(routineExerciseId ?? null, forDate)
+  const {
+    note,
+    setNote,
+    saveNote,
+    topWeight,
+    setTopWeight,
+    topReps,
+    setTopReps,
+    saveTopSet,
+    saving,
+    savingTop
+  } = useExerciseNotes(routineExerciseId ?? null, forDate)
 
   const displayVideoUrl = (demoVideoUrl || exercise.demo?.videoUrl) ?? ''
   const hasVideo = displayVideoUrl.length > 0
@@ -426,16 +437,62 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
             {showNotes ? 'Ocultar notas' : 'Notas'}
           </button>
           {showNotes && (
-            <div className="mt-2">
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                onBlur={() => routineExerciseId && saveNote(note)}
-                placeholder="Escribe aquí tus notas del ejercicio..."
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm placeholder-slate-500 focus:ring-2 focus:ring-sky-500 resize-none"
-              />
-              {saving && <span className="text-xs text-slate-500">Guardando...</span>}
+            <div className="mt-2 space-y-3">
+              <div>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  onBlur={() => routineExerciseId && saveNote(note)}
+                  placeholder="Escribe aquí tus notas del ejercicio..."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm placeholder-slate-500 focus:ring-2 focus:ring-sky-500 resize-none"
+                />
+                {saving && <span className="text-xs text-slate-500">Guardando...</span>}
+              </div>
+              {!editable && routineExerciseId && (
+                <div className="pt-2 border-t border-slate-700 space-y-1">
+                  <p className="text-xs text-slate-400">
+                    Serie máxima del día (opcional)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={topWeight ?? ''}
+                      onChange={(e) =>
+                        setTopWeight(e.target.value ? Number(e.target.value) : null)
+                      }
+                      placeholder="Peso (kg)"
+                      className="w-24 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-xs text-white"
+                    />
+                    <span className="text-xs text-slate-400">x</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={topReps ?? ''}
+                      onChange={(e) =>
+                        setTopReps(e.target.value ? Number(e.target.value) : null)
+                      }
+                      placeholder="Reps"
+                      className="w-20 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-xs text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveTopSet(topWeight ?? null, topReps ?? null)}
+                      disabled={savingTop}
+                      className="rounded bg-sky-600 px-3 py-1.5 text-xs text-white hover:bg-sky-500 disabled:opacity-50"
+                    >
+                      {savingTop ? 'Guardando...' : 'Guardar serie'}
+                    </button>
+                  </div>
+                  {(topWeight != null || topReps != null) && (
+                    <p className="text-xs text-slate-400">
+                      Guardado: {topWeight ?? 0} kg x {topReps ?? 0} reps
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
