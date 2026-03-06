@@ -113,8 +113,24 @@ create policy "Users can manage routine_exercises of own routines"
     where rd.id = routine_exercises.routine_day_id and r.user_id = auth.uid()
   ));
 
-create policy "Users can manage own exercise_library"
-  on public.exercise_library for all using (auth.uid() = user_id);
+drop policy if exists "Users can manage own exercise_library" on public.exercise_library;
+
+create policy "Users can read own exercise_library"
+  on public.exercise_library for select to authenticated
+  using (auth.uid() = user_id);
+
+create policy "Users can insert own exercise_library"
+  on public.exercise_library for insert to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own exercise_library"
+  on public.exercise_library for update to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own exercise_library"
+  on public.exercise_library for delete to authenticated
+  using (auth.uid() = user_id);
 
 create policy "Users can manage own exercise_notes"
   on public.exercise_notes for all using (auth.uid() = user_id);

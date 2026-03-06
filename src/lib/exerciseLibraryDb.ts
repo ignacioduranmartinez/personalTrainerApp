@@ -48,3 +48,69 @@ export async function createLibraryExercise(input: {
   return { error: error?.message ?? null }
 }
 
+/** Importa ejercicios desde rutinas existentes del usuario (deduplicando por nombre exacto). */
+export async function importLibraryFromRoutines(): Promise<{ imported: number; error: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { imported: 0, error: 'No autenticado' }
+
+  const { data: routines, error: rErr } = await supabase
+    .from('routines')
+    .select('id')
+    .eq('user_id', user.id)
+  if (rErr) return { imported: 0, error: rErr.message }
+  const routineIds = (routines || []).map((r) => (r as { id: string }).id)
+  if (routineIds.length === 0) return { imported: 0, error: null }
+
+  const { data: days, error: dErr } = await supabase
+    .from('routine_days')
+    .select('id')
+    .in('routine_id', routineIds)
+  if (dErr) return { imported: 0, error: dErr.message }
+  const dayIds = (days || []).map((d) => (d as { id: string }).id)
+  if (dayIds.length === 0) return { imported: 0, error: null }
+
+  const { data: ex, error: eErr } = await supabase
+    .from('routine_exercises')
+    .select('name, notes, demo_image_url, demo_video_url')
+    .in('routine_day_id', dayIds)
+  if (eErr) return { imported: 0, error: eErr.message }
+
+  const seen = new Set<string>()
+  const payload: Array<{
+    user_id: string
+    name: string
+    category: string | null
+    typology: string | null
+    equipment: string | null
+    notes: string | null
+    demo_image_url: string | null
+    demo_video_url: string | null
+  }> = []
+
+  for (const row of ex || []) {
+    const r = row as { name: string; notes: string | null; demo_image_url: string | null; demo_video_url: string | null }
+    const n = (r.name || '').trim()
+    if (!n) continue
+    if (seen.has(n)) continue
+    seen.add(n)
+    payload.push({
+      user_id: user.id,
+      name: n,
+      category: null,
+      typology: null,
+      equipment: null,
+      notes: r.notes ?? null,
+      demo_image_url: r.demo_image_url ?? null,
+      demo_video_url: r.demo_video_url ?? null
+    })
+  }
+
+  if (payload.length === 0) return { imported: 0, error: null }
+
+  const { error: upErr } = await supabase
+    .from('exercise_library')
+    .upsert(payload, { onConflict: 'user_id,name' })
+
+  return { imported: payload.length, error: upErr?.message ?? null }
+}
+

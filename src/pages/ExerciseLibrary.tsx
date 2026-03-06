@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createLibraryExercise, listLibraryExercises, type LibraryExercise } from '../lib/exerciseLibraryDb'
+import { createLibraryExercise, importLibraryFromRoutines, listLibraryExercises, type LibraryExercise } from '../lib/exerciseLibraryDb'
 
 export default function ExerciseLibrary() {
   const [items, setItems] = useState<LibraryExercise[]>([])
@@ -16,6 +16,8 @@ export default function ExerciseLibrary() {
   const [demoVideoUrl, setDemoVideoUrl] = useState('')
   const [demoImageUrl, setDemoImageUrl] = useState('')
   const [saving, setSaving] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -29,15 +31,22 @@ export default function ExerciseLibrary() {
     load()
   }, [])
 
+  function fold(text: string) {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  }
+
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase()
+    const query = fold(q.trim())
     if (!query) return items
     return items.filter((i) => {
       return (
-        i.name.toLowerCase().includes(query) ||
-        (i.category ?? '').toLowerCase().includes(query) ||
-        (i.typology ?? '').toLowerCase().includes(query) ||
-        (i.equipment ?? '').toLowerCase().includes(query)
+        fold(i.name).includes(query) ||
+        fold(i.category ?? '').includes(query) ||
+        fold(i.typology ?? '').includes(query) ||
+        fold(i.equipment ?? '').includes(query)
       )
     })
   }, [items, q])
@@ -70,6 +79,20 @@ export default function ExerciseLibrary() {
     await load()
   }
 
+  async function handleImport() {
+    setImportMsg(null)
+    setError(null)
+    setImporting(true)
+    const { imported, error } = await importLibraryFromRoutines()
+    setImporting(false)
+    if (error) {
+      setError(error)
+      return
+    }
+    setImportMsg(imported > 0 ? `Importados ${imported} ejercicios desde tus rutinas.` : 'No había ejercicios nuevos para importar.')
+    await load()
+  }
+
   return (
     <div className="py-4">
       <div className="flex items-center justify-between mb-4">
@@ -82,6 +105,26 @@ export default function ExerciseLibrary() {
       <p className="text-slate-500 text-sm mb-6">
         Añade ejercicios aquí y luego podrás incorporarlos rápidamente al crear nuevas rutinas.
       </p>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={handleImport}
+          disabled={importing}
+          className="px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 disabled:opacity-50"
+        >
+          {importing ? 'Importando...' : 'Importar ejercicios desde rutinas'}
+        </button>
+        <button
+          type="button"
+          onClick={load}
+          className="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-sm font-medium hover:bg-slate-700 border border-slate-700"
+        >
+          Refrescar
+        </button>
+      </div>
+      {importMsg && <p className="text-slate-300 text-sm mb-4">{importMsg}</p>}
+      {error && <p className="text-red-400 text-sm mb-4">Error: {error}</p>}
 
       <div className="rounded-xl bg-slate-800 border border-slate-700 p-4 mb-8">
         <h2 className="text-sm font-medium text-slate-300 mb-3">Añadir ejercicio</h2>
@@ -142,7 +185,6 @@ export default function ExerciseLibrary() {
             {saving ? 'Guardando...' : 'Añadir a biblioteca'}
           </button>
         </form>
-        {error && <p className="text-red-400 text-sm mt-3">Error: {error}</p>}
       </div>
 
       <div className="mb-3">

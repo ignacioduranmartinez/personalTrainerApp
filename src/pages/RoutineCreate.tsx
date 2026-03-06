@@ -101,15 +101,22 @@ export default function RoutineCreate() {
     setLibraryLoading(false)
   }
 
+  function fold(text: string) {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  }
+
   const filteredLibrary = useMemo(() => {
-    const q = libraryQuery.trim().toLowerCase()
+    const q = fold(libraryQuery.trim())
     if (!q) return library
     return library.filter((i) => {
       return (
-        i.name.toLowerCase().includes(q) ||
-        (i.category ?? '').toLowerCase().includes(q) ||
-        (i.typology ?? '').toLowerCase().includes(q) ||
-        (i.equipment ?? '').toLowerCase().includes(q)
+        fold(i.name).includes(q) ||
+        fold(i.category ?? '').includes(q) ||
+        fold(i.typology ?? '').includes(q) ||
+        fold(i.equipment ?? '').includes(q)
       )
     })
   }, [library, libraryQuery])
