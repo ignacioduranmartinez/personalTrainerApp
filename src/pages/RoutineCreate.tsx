@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveRoutine } from '../lib/routineDb'
 import type { RoutineImportJSON, Exercise, DaySchedule, WeekSchedule } from '../types/routine'
