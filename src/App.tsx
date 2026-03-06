@@ -15,6 +15,7 @@ import Manage from './pages/Manage'
 import Today from './pages/Today'
 import ExerciseFicha from './pages/ExerciseFicha'
 import Stats from './pages/Stats'
+import ExerciseLibrary from './pages/ExerciseLibrary'
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -55,6 +56,7 @@ function App() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="stats" element={<Stats />} />
         <Route path="manage" element={<Manage />} />
+        <Route path="library" element={<ExerciseLibrary />} />
         <Route path="exercise/:id" element={<ExerciseFicha />} />
       </Route>
       <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />

@@ -34,6 +34,21 @@ create table if not exists public.routine_exercises (
   demo_video_url text
 );
 
+-- Biblioteca de ejercicios (catálogo)
+create table if not exists public.exercise_library (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  category text,
+  typology text,
+  equipment text,
+  notes text,
+  demo_image_url text,
+  demo_video_url text,
+  created_at timestamptz default now(),
+  unique(user_id, name)
+);
+
 -- Notas del usuario por ejercicio (por día de ejecución)
 create table if not exists public.exercise_notes (
   id uuid primary key default gen_random_uuid(),
@@ -78,6 +93,7 @@ create table if not exists public.workout_log (
 alter table public.routines enable row level security;
 alter table public.routine_days enable row level security;
 alter table public.routine_exercises enable row level security;
+alter table public.exercise_library enable row level security;
 alter table public.exercise_notes enable row level security;
 alter table public.exercise_completions enable row level security;
 alter table public.workout_log enable row level security;
@@ -96,6 +112,9 @@ create policy "Users can manage routine_exercises of own routines"
     join public.routines r on r.id = rd.routine_id
     where rd.id = routine_exercises.routine_day_id and r.user_id = auth.uid()
   ));
+
+create policy "Users can manage own exercise_library"
+  on public.exercise_library for all using (auth.uid() = user_id);
 
 create policy "Users can manage own exercise_notes"
   on public.exercise_notes for all using (auth.uid() = user_id);

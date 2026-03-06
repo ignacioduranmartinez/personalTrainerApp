@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveRoutine } from '../lib/routineDb'
 import type { RoutineImportJSON, Exercise, DaySchedule, WeekSchedule } from '../types/routine'
+import { listLibraryExercises, type LibraryExercise } from '../lib/exerciseLibraryDb'
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
@@ -19,6 +20,11 @@ export default function RoutineCreate() {
   const [weeks, setWeeks] = useState<WeekSchedule[]>([emptyWeek()])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showPicker, setShowPicker] = useState<null | { weekIdx: number; dayIdx: number }>(null)
+  const [library, setLibrary] = useState<LibraryExercise[]>([])
+  const [libraryLoading, setLibraryLoading] = useState(false)
+  const [libraryError, setLibraryError] = useState<string | null>(null)
+  const [libraryQuery, setLibraryQuery] = useState('')
 
   function addWeek() {
     setWeeks((w) => [...w, emptyWeek()])
@@ -78,6 +84,54 @@ export default function RoutineCreate() {
               ...day,
               exercises: day.exercises.filter((_, i) => i !== exIdx)
             }
+          })
+        }
+      })
+      return next
+    })
+  }
+
+  async function ensureLibraryLoaded() {
+    if (libraryLoading) return
+    if (library.length > 0) return
+    setLibraryLoading(true)
+    const { data, error } = await listLibraryExercises()
+    setLibraryError(error)
+    setLibrary(data)
+    setLibraryLoading(false)
+  }
+
+  const filteredLibrary = useMemo(() => {
+    const q = libraryQuery.trim().toLowerCase()
+    if (!q) return library
+    return library.filter((i) => {
+      return (
+        i.name.toLowerCase().includes(q) ||
+        (i.category ?? '').toLowerCase().includes(q) ||
+        (i.typology ?? '').toLowerCase().includes(q) ||
+        (i.equipment ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [library, libraryQuery])
+
+  function addFromLibrary(weekIdx: number, dayIdx: number, item: LibraryExercise) {
+    setWeeks((w) => {
+      const next = w.map((week, wi) => {
+        if (wi !== weekIdx) return week
+        return {
+          days: week.days.map((day, di) => {
+            if (di !== dayIdx) return day
+            const ex: Exercise = {
+              name: item.name,
+              sets: 3,
+              reps: '10',
+              notes: item.notes ?? undefined,
+              demo:
+                item.demo_image_url || item.demo_video_url
+                  ? { imageUrl: item.demo_image_url ?? undefined, videoUrl: item.demo_video_url ?? undefined }
+                  : undefined
+            }
+            return { ...day, exercises: [...day.exercises, ex] }
           })
         }
       })
@@ -205,6 +259,17 @@ export default function RoutineCreate() {
                     >
                       + Añadir ejercicio
                     </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await ensureLibraryLoaded()
+                        setLibraryQuery('')
+                        setShowPicker({ weekIdx, dayIdx })
+                      }}
+                      className="ml-4 text-slate-400 text-sm hover:text-white hover:underline"
+                    >
+                      + Añadir desde biblioteca
+                    </button>
                   </li>
                 </ul>
               </div>
@@ -238,6 +303,64 @@ export default function RoutineCreate() {
           </button>
         </div>
       </form>
+
+      {showPicker && (
+        <div className="fixed inset-0 z-20 bg-black/60 flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-700 overflow-hidden">
+            <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <p className="text-white font-medium">Añadir ejercicio desde biblioteca</p>
+              <button
+                type="button"
+                onClick={() => setShowPicker(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="p-4">
+              {libraryError && (
+                <p className="text-red-400 text-sm mb-3">Error: {libraryError}</p>
+              )}
+              <input
+                value={libraryQuery}
+                onChange={(e) => setLibraryQuery(e.target.value)}
+                placeholder="Buscar por nombre, categoría, tipología o material..."
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500 mb-3"
+              />
+              {libraryLoading ? (
+                <p className="text-slate-400 text-sm">Cargando biblioteca...</p>
+              ) : filteredLibrary.length === 0 ? (
+                <p className="text-slate-500 text-sm">No hay resultados.</p>
+              ) : (
+                <ul className="max-h-[50vh] overflow-auto space-y-2">
+                  {filteredLibrary.map((i) => (
+                    <li key={i.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addFromLibrary(showPicker.weekIdx, showPicker.dayIdx, i)
+                          setShowPicker(null)
+                        }}
+                        className="w-full text-left rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 p-3"
+                      >
+                        <p className="text-white font-medium">{i.name}</p>
+                        {(i.category || i.typology || i.equipment) && (
+                          <p className="text-slate-500 text-sm mt-0.5">
+                            {[i.category, i.typology, i.equipment].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-slate-500 text-xs mt-3">
+                Si no encuentras un ejercicio, añádelo en Gestionar → Biblioteca de ejercicios.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
