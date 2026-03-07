@@ -31,8 +31,9 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* En móvil: espacio para que el contenido no quede bajo la barra inferior */
   .main-content-safe {
-    padding-bottom: max(1.5rem, calc(5rem + env(safe-area-inset-bottom)));
+    padding-bottom: max(1.5rem, calc(72px + env(safe-area-inset-bottom)));
   }
   @media (min-width: 768px) {
     .main-content-safe {

@@ -86,13 +86,13 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 pb-24 md:pb-6 main-content-safe">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 main-content-safe">
         <Outlet />
       </main>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav: barra fija debajo del contenido, bien diferenciada */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-800/98 border-t border-slate-700 flex items-stretch safe-area-bottom"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-stretch bg-slate-800 border-t-2 border-slate-600 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.5)]"
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
           minHeight: 'calc(56px + env(safe-area-inset-bottom))'
