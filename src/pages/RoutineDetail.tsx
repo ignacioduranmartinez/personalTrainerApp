@@ -14,7 +14,8 @@ import {
   addExerciseToDay,
   deleteRoutineExercise,
   reorderRoutineExercises,
-  updateRoutineExerciseSetsReps
+  updateRoutineExerciseSetsReps,
+  updateRoutineExerciseIntensity
 } from '../lib/routineDb'
 import { useRoutines, useActiveRoutine } from '../hooks/useRoutines'
 import { getLinearDays, getDayLabel } from '../lib/routineUtils'
@@ -58,6 +59,12 @@ export default function RoutineDetail() {
     editingSetsRepsRef.current = editingSetsReps
   }, [editingSetsReps])
   const [savingSetsRepsId, setSavingSetsRepsId] = useState<string | null>(null)
+  const [editingIntensity, setEditingIntensity] = useState<Record<string, string>>({})
+  const editingIntensityRef = useRef(editingIntensity)
+  useEffect(() => {
+    editingIntensityRef.current = editingIntensity
+  }, [editingIntensity])
+  const [savingIntensityId, setSavingIntensityId] = useState<string | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -240,6 +247,23 @@ export default function RoutineDetail() {
     }
   }
 
+  async function handleSaveIntensity(exId: string, value: string) {
+    const intensity = value.trim() === '' ? null : value.trim()
+    setErrorExercises(null)
+    setSavingIntensityId(exId)
+    const { error } = await updateRoutineExerciseIntensity(exId, intensity)
+    setSavingIntensityId(null)
+    if (error) setErrorExercises(error)
+    else {
+      setEditingIntensity((prev) => {
+        const next = { ...prev }
+        delete next[exId]
+        return next
+      })
+      refetch()
+    }
+  }
+
   async function handleMoveExercise(dayIdx: number, exIdx: number, direction: 'up' | 'down') {
     const day = linearDays[dayIdx]
     if (!day?.id || !day.exercises.length) return
@@ -364,7 +388,9 @@ export default function RoutineDetail() {
                     const local = editingSetsReps[exId]
                     const setsVal = local?.sets ?? String(ex.sets ?? '')
                     const repsVal = local?.reps ?? (ex.reps ?? '')
+                    const intensityVal = editingIntensity[exId] ?? (ex.intensity ?? '')
                     const saving = savingSetsRepsId === exId
+                    const savingIntensity = savingIntensityId === exId
                     return (
                     <li
                       key={ex.id ?? exIdx}
@@ -401,6 +427,21 @@ export default function RoutineDetail() {
                           }}
                           disabled={saving}
                           className="w-14 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
+                        />
+                        <label className="sr-only">Intensidad / % / Peso</label>
+                        <input
+                          type="text"
+                          placeholder="%, peso"
+                          value={intensityVal}
+                          onChange={(e) => setEditingIntensity((prev) => ({ ...prev, [exId]: e.target.value }))}
+                          onBlur={() => {
+                            if (!ex.id) return
+                            const v = editingIntensityRef.current[exId] ?? (ex.intensity ?? '')
+                            handleSaveIntensity(ex.id, v)
+                          }}
+                          disabled={savingIntensity}
+                          className="w-20 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
+                          title="% de esfuerzo o peso (ej. 70-75%, 60 kg)"
                         />
                       </div>
                       <div className="flex items-center gap-1 shrink-0">

@@ -311,6 +311,18 @@ export async function updateRoutineExerciseSetsReps(
   return { error: error?.message ?? null }
 }
 
+/** Actualiza la intensidad (% de esfuerzo, peso, etc.) de un ejercicio en la rutina. */
+export async function updateRoutineExerciseIntensity(
+  exerciseId: string,
+  intensity: string | null
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('routine_exercises')
+    .update({ intensity: intensity != null && String(intensity).trim() !== '' ? String(intensity).trim() : null })
+    .eq('id', exerciseId)
+  return { error: error?.message ?? null }
+}
+
 export interface ExerciseRow {
   id: string
   name: string
