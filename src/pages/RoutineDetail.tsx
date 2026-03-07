@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   updateRoutineDates,
@@ -13,7 +13,8 @@ import {
   deleteRoutineDay,
   addExerciseToDay,
   deleteRoutineExercise,
-  reorderRoutineExercises
+  reorderRoutineExercises,
+  updateRoutineExerciseSetsReps
 } from '../lib/routineDb'
 import { useRoutines, useActiveRoutine } from '../hooks/useRoutines'
 import { getLinearDays, getDayLabel } from '../lib/routineUtils'
@@ -51,6 +52,12 @@ export default function RoutineDetail() {
   const [deletingExId, setDeletingExId] = useState<string | null>(null)
   const [reorderingDayIdx, setReorderingDayIdx] = useState<number | null>(null)
   const [errorExercises, setErrorExercises] = useState<string | null>(null)
+  const [editingSetsReps, setEditingSetsReps] = useState<Record<string, { sets: string; reps: string }>>({})
+  const editingSetsRepsRef = useRef(editingSetsReps)
+  useEffect(() => {
+    editingSetsRepsRef.current = editingSetsReps
+  }, [editingSetsReps])
+  const [savingSetsRepsId, setSavingSetsRepsId] = useState<string | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -215,6 +222,24 @@ export default function RoutineDetail() {
     else refetch()
   }
 
+  async function handleSaveSetsReps(exId: string, setsStr: string, repsStr: string) {
+    const sets = setsStr.trim() === '' ? null : parseInt(setsStr, 10)
+    const reps = repsStr.trim() === '' ? null : repsStr.trim()
+    setErrorExercises(null)
+    setSavingSetsRepsId(exId)
+    const { error } = await updateRoutineExerciseSetsReps(exId, sets, reps)
+    setSavingSetsRepsId(null)
+    if (error) setErrorExercises(error)
+    else {
+      setEditingSetsReps((prev) => {
+        const next = { ...prev }
+        delete next[exId]
+        return next
+      })
+      refetch()
+    }
+  }
+
   async function handleMoveExercise(dayIdx: number, exIdx: number, direction: 'up' | 'down') {
     const day = linearDays[dayIdx]
     if (!day?.id || !day.exercises.length) return
@@ -334,12 +359,50 @@ export default function RoutineDetail() {
               <div key={day.id ?? dayIdx} className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
                 <h3 className="text-sm font-medium text-white mb-3">{getDayLabel(linearDays, dayIdx)}</h3>
                 <ul className="space-y-2 mb-3">
-                  {day.exercises.map((ex, exIdx) => (
+                  {day.exercises.map((ex, exIdx) => {
+                    const exId = ex.id ?? ''
+                    const local = editingSetsReps[exId]
+                    const setsVal = local?.sets ?? String(ex.sets ?? '')
+                    const repsVal = local?.reps ?? (ex.reps ?? '')
+                    const saving = savingSetsRepsId === exId
+                    return (
                     <li
                       key={ex.id ?? exIdx}
                       className="flex flex-wrap items-center gap-2 min-h-[44px] py-1"
                     >
                       <span className="flex-1 min-w-0 text-slate-200 text-sm">{ex.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="sr-only">Series</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          placeholder="S"
+                          value={setsVal}
+                          onChange={(e) => setEditingSetsReps((prev) => ({ ...prev, [exId]: { sets: e.target.value, reps: prev[exId]?.reps ?? (ex.reps ?? '') } }))}
+                          onBlur={() => {
+                            if (!ex.id) return
+                            const v = editingSetsRepsRef.current[exId] ?? { sets: String(ex.sets ?? ''), reps: ex.reps ?? '' }
+                            handleSaveSetsReps(ex.id, v.sets, v.reps)
+                          }}
+                          disabled={saving}
+                          className="w-12 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm text-center"
+                        />
+                        <label className="sr-only">Repeticiones</label>
+                        <input
+                          type="text"
+                          placeholder="Rep"
+                          value={repsVal}
+                          onChange={(e) => setEditingSetsReps((prev) => ({ ...prev, [exId]: { sets: prev[exId]?.sets ?? String(ex.sets ?? ''), reps: e.target.value } }))}
+                          onBlur={() => {
+                            if (!ex.id) return
+                            const v = editingSetsRepsRef.current[exId] ?? { sets: String(ex.sets ?? ''), reps: ex.reps ?? '' }
+                            handleSaveSetsReps(ex.id, v.sets, v.reps)
+                          }}
+                          disabled={saving}
+                          className="w-14 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
+                        />
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -373,7 +436,8 @@ export default function RoutineDetail() {
                         </button>
                       </div>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
                 {addingExerciseDayIdx === dayIdx ? (
                   <div className="border-t border-slate-600 pt-3 space-y-2">

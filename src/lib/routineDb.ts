@@ -295,6 +295,22 @@ export async function updateExerciseRest(
   return { error: error?.message ?? null }
 }
 
+/** Actualiza series y repeticiones de un ejercicio dentro de la rutina (nivel routine_exercises). */
+export async function updateRoutineExerciseSetsReps(
+  exerciseId: string,
+  sets: number | null,
+  reps: string | null
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('routine_exercises')
+    .update({
+      sets: sets != null && !Number.isNaN(sets) ? sets : null,
+      reps: reps != null && String(reps).trim() !== '' ? String(reps).trim() : null
+    })
+    .eq('id', exerciseId)
+  return { error: error?.message ?? null }
+}
+
 export interface ExerciseRow {
   id: string
   name: string
