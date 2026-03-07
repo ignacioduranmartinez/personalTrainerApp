@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { updateRoutineDates, deleteRoutine } from '../lib/routineDb'
-import { useRoutines } from '../hooks/useRoutines'
+import { updateRoutineDates, deleteRoutine, setRoutineActive } from '../lib/routineDb'
+import { useRoutines, useActiveRoutine } from '../hooks/useRoutines'
+
+const today = new Date().toISOString().slice(0, 10)
 
 export default function RoutineDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { routines, loading } = useRoutines()
+  const { routines, loading, refetch } = useRoutines()
+  const { activeRoutine } = useActiveRoutine(today)
   const routine = routines.find((r) => r.id === id)
 
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [activating, setActivating] = useState(false)
+  const isActive = activeRoutine?.id === id
 
   useEffect(() => {
     if (routine) {
@@ -44,7 +49,17 @@ export default function RoutineDetail() {
       endDate || null
     )
     setSaving(false)
-    if (ok) navigate('/routines')
+    if (ok) {
+      refetch()
+    }
+  }
+
+  async function handleActivate() {
+    if (!id) return
+    setActivating(true)
+    const { error } = await setRoutineActive(id)
+    setActivating(false)
+    if (!error) refetch()
   }
 
   async function handleDelete() {
@@ -68,9 +83,26 @@ export default function RoutineDetail() {
           Volver
         </Link>
       </div>
-      <p className="text-slate-500 text-sm mb-6">
+      <p className="text-slate-500 text-sm mb-4">
         {routine.weeks.length} semana(s), {totalExercises} ejercicios en total.
       </p>
+
+      {!isActive && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={handleActivate}
+            disabled={activating}
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
+          >
+            {activating ? 'Activando...' : 'Activar esta rutina'}
+          </button>
+          <p className="text-slate-500 text-xs mt-1">La rutina activa es la que se usa en Hoy y Calendario.</p>
+        </div>
+      )}
+      {isActive && (
+        <p className="text-sky-400 text-sm mb-6">Esta rutina está activa.</p>
+      )}
 
       <form onSubmit={handleSaveDates} className="space-y-4 mb-8">
         <h2 className="text-sm font-medium text-slate-300">Fechas de la rutina</h2>
