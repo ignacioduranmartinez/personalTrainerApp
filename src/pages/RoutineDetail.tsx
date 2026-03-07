@@ -7,7 +7,10 @@ import {
   updateRoutineName,
   updateRoutineDayLabel,
   setNextDayOverride,
-  getNextDayOverride
+  getNextDayOverride,
+  clearNextDayOverride,
+  addRoutineDay,
+  deleteRoutineDay
 } from '../lib/routineDb'
 import { useRoutines, useActiveRoutine } from '../hooks/useRoutines'
 import { getLinearDays, getDayLabel } from '../lib/routineUtils'
@@ -32,6 +35,8 @@ export default function RoutineDetail() {
   const [savingDayIdx, setSavingDayIdx] = useState<number | null>(null)
   const [nextDayOverride, setNextDayOverrideState] = useState<number | null>(null)
   const [savingOverride, setSavingOverride] = useState(false)
+  const [addingDay, setAddingDay] = useState(false)
+  const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -119,6 +124,31 @@ export default function RoutineDetail() {
     }
   }
 
+  async function handleClearNextDayOverride() {
+    if (!id) return
+    setSavingOverride(true)
+    await clearNextDayOverride(id)
+    setNextDayOverrideState(null)
+    setSavingOverride(false)
+    refetch()
+  }
+
+  async function handleAddDay() {
+    if (!id) return
+    setAddingDay(true)
+    const { error } = await addRoutineDay(id)
+    setAddingDay(false)
+    if (!error) refetch()
+  }
+
+  async function handleDeleteDay(dayId: string) {
+    if (!dayId || !confirm('¿Eliminar este día de la rutina? Se borrarán también sus ejercicios.')) return
+    setDeletingDayId(dayId)
+    const { error } = await deleteRoutineDay(dayId)
+    setDeletingDayId(null)
+    if (!error) refetch()
+  }
+
   const totalExercises = routine.weeks.reduce(
     (acc, w) => acc + w.days.reduce((a, d) => a + d.exercises.length, 0),
     0
@@ -156,10 +186,12 @@ export default function RoutineDetail() {
         </div>
       </section>
 
-      {linearDays.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-sm font-medium text-slate-300 mb-2">Nombres de los días</h2>
-          <p className="text-slate-500 text-xs mb-3">Asigna o cambia el nombre de cada día de la rutina.</p>
+      <section className="mb-6">
+        <h2 className="text-sm font-medium text-slate-300 mb-2">Días de la rutina</h2>
+        <p className="text-slate-500 text-xs mb-3">Asigna o cambia el nombre de cada día. Puedes añadir o eliminar días.</p>
+        {linearDays.length === 0 ? (
+          <p className="text-slate-500 text-sm mb-2">La rutina no tiene días.</p>
+        ) : null}
           <ul className="space-y-2">
             {linearDays.map((day, idx) => (
               <li key={day.id ?? idx} className="flex flex-wrap items-center gap-2">
@@ -175,26 +207,48 @@ export default function RoutineDetail() {
                   className="flex-1 min-w-[120px] min-h-[40px] px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
                 />
                 {day.id && (
-                  <button
-                    type="button"
-                    onClick={() => handleSaveDayLabel(idx)}
-                    disabled={savingDayIdx === idx}
-                    className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600 disabled:opacity-50"
-                  >
-                    {savingDayIdx === idx ? 'Guardando...' : 'Guardar'}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveDayLabel(idx)}
+                      disabled={savingDayIdx === idx}
+                      className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600 disabled:opacity-50"
+                    >
+                      {savingDayIdx === idx ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    {linearDays.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDay(day.id!)}
+                        disabled={deletingDayId === day.id}
+                        className="min-h-[40px] px-3 py-2 rounded-lg bg-red-900/40 text-red-300 text-sm hover:bg-red-900/60 disabled:opacity-50"
+                      >
+                        {deletingDayId === day.id ? 'Eliminando...' : 'Eliminar'}
+                      </button>
+                    )}
+                  </>
                 )}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        <button
+          type="button"
+          onClick={handleAddDay}
+          disabled={addingDay}
+          className="mt-3 min-h-[40px] px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+        >
+          {addingDay ? 'Añadiendo...' : linearDays.length === 0 ? 'Añadir primer día' : 'Añadir día'}
+        </button>
+      </section>
 
       {isActive && linearDays.length > 0 && (
         <section className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700">
           <h2 className="text-sm font-medium text-slate-300 mb-1">Próximo día a realizar</h2>
-          <p className="text-slate-500 text-xs mb-3">
-            Fija qué día de la rutina tocará la próxima vez que se entrene (aunque el sistema recomiende otro). Así puedes indicar, por ejemplo, que empiece de nuevo por el Día 1.
+          <p className="text-slate-500 text-xs mb-2">
+            Fija qué día de la rutina tocará la próxima vez que se entrene (aunque el sistema recomiende otro).
+          </p>
+          <p className="text-sky-300/90 text-xs mb-3">
+            Pulsa el día que quieras; se guarda al instante (no hace falta otro botón).
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {linearDays.map((_, idx) => (
@@ -205,17 +259,25 @@ export default function RoutineDetail() {
                 disabled={savingOverride}
                 className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium touch-manipulation ${
                   nextDayOverride === idx
-                    ? 'bg-sky-600 text-white'
+                    ? 'bg-sky-600 text-white ring-2 ring-sky-400'
                     : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
                 }`}
               >
                 {getDayLabel(linearDays, idx)}
               </button>
             ))}
-            <span className="text-slate-500 text-xs">
-              {nextDayOverride != null ? `Actual: ${getDayLabel(linearDays, nextDayOverride)}` : 'Sin fijar (se usa la secuencia)'}
-            </span>
+            <button
+              type="button"
+              onClick={handleClearNextDayOverride}
+              disabled={savingOverride || nextDayOverride == null}
+              className="min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Quitar fijación
+            </button>
           </div>
+          <p className="text-slate-500 text-xs mt-2">
+            {nextDayOverride != null ? `Próximo entreno: ${getDayLabel(linearDays, nextDayOverride)}` : 'Sin fijar (se usa la secuencia automática)'}
+          </p>
         </section>
       )}
 

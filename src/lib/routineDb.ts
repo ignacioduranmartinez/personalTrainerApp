@@ -100,6 +100,40 @@ export async function updateRoutineDayLabel(dayId: string, label: string): Promi
   return { error: null }
 }
 
+/** Añade un día al final de la rutina (sin ejercicios). */
+export async function addRoutineDay(routineId: string): Promise<{ error: string | null; dayId?: string }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+  const { data: days } = await supabase
+    .from('routine_days')
+    .select('id, week_index, day_index')
+    .eq('routine_id', routineId)
+    .order('week_index', { ascending: true })
+    .order('day_index', { ascending: true })
+  const list = (days || []) as { id: string; week_index: number; day_index: number }[]
+  let weekIndex = 0
+  let dayIndex = 0
+  if (list.length > 0) {
+    const last = list[list.length - 1]
+    weekIndex = last.week_index
+    dayIndex = last.day_index + 1
+  }
+  const label = `Día ${list.length + 1}`
+  const { data: newDay, error } = await supabase
+    .from('routine_days')
+    .insert({ routine_id: routineId, week_index: weekIndex, day_index: dayIndex, label })
+    .select('id')
+    .single()
+  if (error) return { error: error.message }
+  return { error: null, dayId: (newDay as { id: string }).id }
+}
+
+/** Elimina un día de la rutina (y sus ejercicios por cascade). */
+export async function deleteRoutineDay(dayId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.from('routine_days').delete().eq('id', dayId)
+  return { error: error?.message ?? null }
+}
+
 /** Override del próximo día: el entrenador puede fijar "el próximo entreno será Día X". */
 export async function setNextDayOverride(routineId: string, nextDayIndex: number): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
