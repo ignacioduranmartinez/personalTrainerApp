@@ -38,7 +38,7 @@ export default function Layout() {
     navigate('/login')
   }
 
-  const isMoreActive = moreItems.some(({ to }) => location.pathname === to || (to !== '/' && location.pathname.startsWith(to)))
+  const isMoreActive = moreItems.some(({ to }) => location.pathname === to || location.pathname.startsWith(to + '/'))
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900">
