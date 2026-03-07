@@ -46,9 +46,9 @@ export default function RoutineDetail() {
       setStartDate(routine.startDate ?? '')
       setEndDate(routine.endDate ?? '')
       setEditingName(routine.name)
-      setDayLabels(linearDays.map((d) => d.label))
+      setDayLabels(getLinearDays(routine).map((d) => d.label))
     }
-  }, [routine, linearDays])
+  }, [routine])
 
   useEffect(() => {
     if (id) getNextDayOverride(id).then(setNextDayOverrideState)
