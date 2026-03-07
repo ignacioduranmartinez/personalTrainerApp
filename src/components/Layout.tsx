@@ -10,9 +10,7 @@ const navItems = [
 ] as const
 
 const moreItems = [
-  { to: '/manage', label: 'Gestionar' },
-  { to: '/library', label: 'Biblioteca de ejercicios' },
-  { to: '/routines', label: 'Rutinas' }
+  { to: '/manage', label: 'Gestionar' }
 ] as const
 
 function NavLinkMobile({ to, label }: { to: string; label: string }) {
