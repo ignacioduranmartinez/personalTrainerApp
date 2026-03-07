@@ -10,10 +10,15 @@ import {
   getNextDayOverride,
   clearNextDayOverride,
   addRoutineDay,
-  deleteRoutineDay
+  deleteRoutineDay,
+  addExerciseToDay,
+  deleteRoutineExercise,
+  reorderRoutineExercises
 } from '../lib/routineDb'
 import { useRoutines, useActiveRoutine } from '../hooks/useRoutines'
 import { getLinearDays, getDayLabel } from '../lib/routineUtils'
+import { listLibraryExercises } from '../lib/exerciseLibraryDb'
+import type { LibraryExercise } from '../lib/exerciseLibraryDb'
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -39,6 +44,13 @@ export default function RoutineDetail() {
   const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
   const [errorDayLabel, setErrorDayLabel] = useState<string | null>(null)
   const [errorOverride, setErrorOverride] = useState<string | null>(null)
+  const [addingExerciseDayIdx, setAddingExerciseDayIdx] = useState<number | null>(null)
+  const [newExerciseName, setNewExerciseName] = useState('')
+  const [libraryExercises, setLibraryExercises] = useState<LibraryExercise[]>([])
+  const [savingExercise, setSavingExercise] = useState(false)
+  const [deletingExId, setDeletingExId] = useState<string | null>(null)
+  const [reorderingDayIdx, setReorderingDayIdx] = useState<number | null>(null)
+  const [errorExercises, setErrorExercises] = useState<string | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -53,6 +65,14 @@ export default function RoutineDetail() {
   useEffect(() => {
     if (id) getNextDayOverride(id).then(setNextDayOverrideState)
   }, [id])
+
+  useEffect(() => {
+    if (addingExerciseDayIdx != null) {
+      listLibraryExercises().then(({ data }) => setLibraryExercises(data))
+    } else {
+      setNewExerciseName('')
+    }
+  }, [addingExerciseDayIdx])
 
   if (loading || !id) {
     return <div className="py-8 text-slate-400">Cargando...</div>
@@ -163,6 +183,55 @@ export default function RoutineDetail() {
     if (!error) refetch()
   }
 
+  async function handleAddExercise(dayIdx: number, name?: string, fromLibrary?: LibraryExercise) {
+    const day = linearDays[dayIdx]
+    if (!day?.id) return
+    const exerciseName = (fromLibrary?.name ?? name ?? newExerciseName).trim()
+    if (!exerciseName) return
+    setErrorExercises(null)
+    setSavingExercise(true)
+    const { error } = await addExerciseToDay(day.id, {
+      name: exerciseName,
+      demo_image_url: fromLibrary?.demo_image_url ?? null,
+      demo_video_url: fromLibrary?.demo_video_url ?? null
+    })
+    setSavingExercise(false)
+    if (error) {
+      setErrorExercises(error)
+      return
+    }
+    setAddingExerciseDayIdx(null)
+    setNewExerciseName('')
+    refetch()
+  }
+
+  async function handleRemoveExercise(exerciseId: string) {
+    if (!confirm('¿Quitar este ejercicio del día?')) return
+    setErrorExercises(null)
+    setDeletingExId(exerciseId)
+    const { error } = await deleteRoutineExercise(exerciseId)
+    setDeletingExId(null)
+    if (error) setErrorExercises(error)
+    else refetch()
+  }
+
+  async function handleMoveExercise(dayIdx: number, exIdx: number, direction: 'up' | 'down') {
+    const day = linearDays[dayIdx]
+    if (!day?.id || !day.exercises.length) return
+    const next = [...day.exercises]
+    const i = direction === 'up' ? exIdx - 1 : exIdx + 1
+    if (i < 0 || i >= next.length) return
+    ;[next[exIdx], next[i]] = [next[i], next[exIdx]]
+    const orderedIds = next.map((e) => e.id).filter((id): id is string => Boolean(id))
+    if (orderedIds.length !== day.exercises.length) return
+    setErrorExercises(null)
+    setReorderingDayIdx(dayIdx)
+    const { error } = await reorderRoutineExercises(day.id, orderedIds)
+    setReorderingDayIdx(null)
+    if (error) setErrorExercises(error)
+    else refetch()
+  }
+
   const totalExercises = routine.weeks.reduce(
     (acc, w) => acc + w.days.reduce((a, d) => a + d.exercises.length, 0),
     0
@@ -254,6 +323,118 @@ export default function RoutineDetail() {
           {addingDay ? 'Añadiendo...' : linearDays.length === 0 ? 'Añadir primer día' : 'Añadir día'}
         </button>
       </section>
+
+      {linearDays.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-sm font-medium text-slate-300 mb-2">Ejercicios por día</h2>
+          <p className="text-slate-500 text-xs mb-4">Añade, quita o reordena ejercicios en cada día de la rutina.</p>
+          {errorExercises && <p className="text-red-400 text-sm mb-3" role="alert">{errorExercises}</p>}
+          <div className="space-y-6">
+            {linearDays.map((day, dayIdx) => (
+              <div key={day.id ?? dayIdx} className="rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+                <h3 className="text-sm font-medium text-white mb-3">{getDayLabel(linearDays, dayIdx)}</h3>
+                <ul className="space-y-2 mb-3">
+                  {day.exercises.map((ex, exIdx) => (
+                    <li
+                      key={ex.id ?? exIdx}
+                      className="flex flex-wrap items-center gap-2 min-h-[44px] py-1"
+                    >
+                      <span className="flex-1 min-w-0 text-slate-200 text-sm">{ex.name}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveExercise(dayIdx, exIdx, 'up')}
+                          disabled={reorderingDayIdx === dayIdx || exIdx === 0}
+                          className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40 disabled:pointer-events-none"
+                          title="Subir"
+                          aria-label="Subir"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveExercise(dayIdx, exIdx, 'down')}
+                          disabled={reorderingDayIdx === dayIdx || exIdx === day.exercises.length - 1}
+                          className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40 disabled:pointer-events-none"
+                          title="Bajar"
+                          aria-label="Bajar"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => ex.id && handleRemoveExercise(ex.id)}
+                          disabled={deletingExId === (ex.id ?? '')}
+                          className="p-2 rounded-lg bg-red-900/40 text-red-300 hover:bg-red-900/60 disabled:opacity-50"
+                          title="Quitar ejercicio"
+                          aria-label="Quitar ejercicio"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {addingExerciseDayIdx === dayIdx ? (
+                  <div className="border-t border-slate-600 pt-3 space-y-2">
+                    <input
+                      type="text"
+                      value={newExerciseName}
+                      onChange={(e) => setNewExerciseName(e.target.value)}
+                      placeholder="Nombre del ejercicio"
+                      className="w-full min-h-[40px] px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
+                      autoFocus
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAddExercise(dayIdx)}
+                        disabled={savingExercise || !newExerciseName.trim()}
+                        className="min-h-[40px] px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+                      >
+                        {savingExercise ? 'Añadiendo...' : 'Añadir'}
+                      </button>
+                      {libraryExercises.length > 0 && (
+                        <select
+                          className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm"
+                          value=""
+                          onChange={(e) => {
+                            const libId = e.target.value
+                            if (!libId) return
+                            const lib = libraryExercises.find((x) => x.id === libId)
+                            if (lib) handleAddExercise(dayIdx, undefined, lib)
+                            e.target.value = ''
+                          }}
+                        >
+                          <option value="">Desde biblioteca...</option>
+                          {libraryExercises.map((lib) => (
+                            <option key={lib.id} value={lib.id}>{lib.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setAddingExerciseDayIdx(null)}
+                        className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 text-slate-300 text-sm hover:bg-slate-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAddingExerciseDayIdx(dayIdx)}
+                    className="min-h-[40px] px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm font-medium hover:bg-slate-600"
+                  >
+                    Añadir ejercicio
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {isActive && linearDays.length > 0 && (
         <section className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700">

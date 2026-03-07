@@ -137,6 +137,67 @@ export async function deleteRoutineDay(dayId: string): Promise<{ error: string |
   return { error: error?.message ?? null }
 }
 
+/** Datos mínimos para añadir un ejercicio a un día de la rutina */
+export interface AddExerciseInput {
+  name: string
+  sets?: number | null
+  reps?: string | null
+  intensity?: string | null
+  rest_seconds?: number | null
+  notes?: string | null
+  demo_image_url?: string | null
+  demo_video_url?: string | null
+}
+
+/** Añade un ejercicio al final de un día de la rutina. */
+export async function addExerciseToDay(dayId: string, input: AddExerciseInput): Promise<{ error: string | null; id?: string }> {
+  const { data: existing } = await supabase
+    .from('routine_exercises')
+    .select('sort_order')
+    .eq('routine_day_id', dayId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const nextOrder = existing != null ? ((existing as { sort_order: number }).sort_order + 1) : 0
+  const { data: row, error } = await supabase
+    .from('routine_exercises')
+    .insert({
+      routine_day_id: dayId,
+      sort_order: nextOrder,
+      name: input.name.trim(),
+      sets: input.sets ?? null,
+      reps: input.reps ?? null,
+      intensity: input.intensity ?? null,
+      rest_seconds: input.rest_seconds ?? null,
+      notes: input.notes ?? null,
+      demo_image_url: input.demo_image_url ?? null,
+      demo_video_url: input.demo_video_url ?? null
+    })
+    .select('id')
+    .single()
+  if (error) return { error: error.message }
+  return { error: null, id: (row as { id: string }).id }
+}
+
+/** Elimina un ejercicio de la rutina. */
+export async function deleteRoutineExercise(exerciseId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.from('routine_exercises').delete().eq('id', exerciseId)
+  return { error: error?.message ?? null }
+}
+
+/** Reordena los ejercicios de un día: orderedIds es el array de id de routine_exercises en el orden deseado. */
+export async function reorderRoutineExercises(dayId: string, orderedIds: string[]): Promise<{ error: string | null }> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from('routine_exercises')
+      .update({ sort_order: i })
+      .eq('id', orderedIds[i])
+      .eq('routine_day_id', dayId)
+    if (error) return { error: error.message }
+  }
+  return { error: null }
+}
+
 /** Override del próximo día: el entrenador puede fijar "el próximo entreno será Día X". */
 export async function setNextDayOverride(routineId: string, nextDayIndex: number): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
