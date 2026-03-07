@@ -373,48 +373,50 @@ export default function RoutineCreate() {
               {libraryLoading ? (
                 <p className="text-slate-500 text-sm">Cargando...</p>
               ) : (
-                <ul className="space-y-1.5 max-h-[60vh] overflow-auto">
-                  {filteredLibrary.map((lib) => (
-                    <li
-                      key={lib.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, lib)}
-                      onClick={() => setAddToDayFor(lib)}
-                      className="cursor-grab active:cursor-grabbing rounded-lg bg-slate-700/80 border border-slate-600 px-3 py-2 text-sm text-white hover:border-slate-500 touch-manipulation"
-                    >
-                      {lib.name}
-                      {(lib.muscle || lib.movement_pattern) && (
-                        <span className="block text-xs text-slate-500 truncate">
-                          {[lib.muscle, lib.movement_pattern].filter(Boolean).join(' · ')}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                {addToDayFor && (
-                  <div className="mt-3 p-3 rounded-lg bg-slate-700 border border-slate-600">
-                    <p className="text-xs text-slate-400 mb-2">Añadir &quot;{addToDayFor.name}&quot; a:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {days.map((day, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => addExerciseToDay(i, addToDayFor)}
-                          className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-600 text-white text-xs font-medium hover:bg-slate-500 touch-manipulation"
-                        >
-                          {day.label}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setAddToDayFor(null)}
-                        className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs"
+                <>
+                  <ul className="space-y-1.5 max-h-[60vh] overflow-auto">
+                    {filteredLibrary.map((lib) => (
+                      <li
+                        key={lib.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, lib)}
+                        onClick={() => setAddToDayFor(lib)}
+                        className="cursor-grab active:cursor-grabbing rounded-lg bg-slate-700/80 border border-slate-600 px-3 py-2 text-sm text-white hover:border-slate-500 touch-manipulation"
                       >
-                        Cerrar
-                      </button>
+                        {lib.name}
+                        {(lib.muscle || lib.movement_pattern) && (
+                          <span className="block text-xs text-slate-500 truncate">
+                            {[lib.muscle, lib.movement_pattern].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {addToDayFor && (
+                    <div className="mt-3 p-3 rounded-lg bg-slate-700 border border-slate-600">
+                      <p className="text-xs text-slate-400 mb-2">Añadir &quot;{addToDayFor.name}&quot; a:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {days.map((day, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => addExerciseToDay(i, addToDayFor)}
+                            className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-600 text-white text-xs font-medium hover:bg-slate-500 touch-manipulation"
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setAddToDayFor(null)}
+                          className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </>
               )}
             </div>
 
