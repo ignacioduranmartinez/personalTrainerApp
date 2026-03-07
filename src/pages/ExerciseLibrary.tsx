@@ -1,23 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createLibraryExercise, importLibraryFromRoutines, listLibraryExercises, type LibraryExercise } from '../lib/exerciseLibraryDb'
+import {
+  createLibraryExercise,
+  importLibraryFromRoutines,
+  listLibraryExercises,
+  updateLibraryExercise,
+  MUSCLE_OPTIONS,
+  MOVEMENT_PATTERN_OPTIONS,
+  type LibraryExercise
+} from '../lib/exerciseLibraryDb'
+
+const EMPTY = ''
 
 export default function ExerciseLibrary() {
   const [items, setItems] = useState<LibraryExercise[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
+  const [muscleFilter, setMuscleFilter] = useState<string>(EMPTY)
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [typology, setTypology] = useState('')
   const [equipment, setEquipment] = useState('')
+  const [muscle, setMuscle] = useState('')
+  const [movementPattern, setMovementPattern] = useState('')
   const [notes, setNotes] = useState('')
   const [demoVideoUrl, setDemoVideoUrl] = useState('')
   const [demoImageUrl, setDemoImageUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editMuscle, setEditMuscle] = useState('')
+  const [editPattern, setEditPattern] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -39,17 +56,23 @@ export default function ExerciseLibrary() {
   }
 
   const filtered = useMemo(() => {
+    let list = items
+    if (muscleFilter) {
+      list = list.filter((i) => (i.muscle ?? '') === muscleFilter)
+    }
     const query = fold(q.trim())
-    if (!query) return items
-    return items.filter((i) => {
+    if (!query) return list
+    return list.filter((i) => {
       return (
         fold(i.name).includes(query) ||
         fold(i.category ?? '').includes(query) ||
         fold(i.typology ?? '').includes(query) ||
-        fold(i.equipment ?? '').includes(query)
+        fold(i.equipment ?? '').includes(query) ||
+        fold(i.muscle ?? '').includes(query) ||
+        fold(i.movement_pattern ?? '').includes(query)
       )
     })
-  }, [items, q])
+  }, [items, q, muscleFilter])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -60,6 +83,8 @@ export default function ExerciseLibrary() {
       category,
       typology,
       equipment,
+      muscle: muscle || undefined,
+      movementPattern: movementPattern || undefined,
       notes,
       demoVideoUrl,
       demoImageUrl
@@ -73,9 +98,39 @@ export default function ExerciseLibrary() {
     setCategory('')
     setTypology('')
     setEquipment('')
+    setMuscle('')
+    setMovementPattern('')
     setNotes('')
     setDemoVideoUrl('')
     setDemoImageUrl('')
+    await load()
+  }
+
+  function startEdit(item: LibraryExercise) {
+    setEditingId(item.id)
+    setEditMuscle(item.muscle ?? '')
+    setEditPattern(item.movement_pattern ?? '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditMuscle('')
+    setEditPattern('')
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    setSavingEdit(true)
+    const { error } = await updateLibraryExercise(editingId, {
+      muscle: editMuscle || null,
+      movementPattern: editPattern || null
+    })
+    setSavingEdit(false)
+    if (error) {
+      setError(error)
+      return
+    }
+    setEditingId(null)
     await load()
   }
 
@@ -155,6 +210,30 @@ export default function ExerciseLibrary() {
               className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm"
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label className="text-slate-400 text-sm">Músculo</label>
+            <label className="text-slate-400 text-sm sm:col-start-2">Patrón de movimiento</label>
+            <select
+              value={muscle}
+              onChange={(e) => setMuscle(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm"
+            >
+              <option value="">— Elegir —</option>
+              {MUSCLE_OPTIONS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={movementPattern}
+              onChange={(e) => setMovementPattern(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm"
+            >
+              <option value="">— Elegir —</option>
+              {MOVEMENT_PATTERN_OPTIONS.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -187,13 +266,23 @@ export default function ExerciseLibrary() {
         </form>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-3 flex flex-wrap gap-2 items-center">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nombre, categoría, tipología o material..."
-          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm placeholder-slate-500"
+          className="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm placeholder-slate-500"
         />
+        <select
+          value={muscleFilter}
+          onChange={(e) => setMuscleFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm"
+        >
+          <option value="">Todos los músculos</option>
+          {MUSCLE_OPTIONS.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
@@ -204,13 +293,66 @@ export default function ExerciseLibrary() {
         <ul className="space-y-2">
           {filtered.map((i) => (
             <li key={i.id} className="rounded-xl bg-slate-800 border border-slate-700 p-4">
-              <p className="text-white font-medium">{i.name}</p>
-              {(i.category || i.typology || i.equipment) && (
-                <p className="text-slate-500 text-sm mt-1">
-                  {[i.category, i.typology, i.equipment].filter(Boolean).join(' · ')}
-                </p>
-              )}
-              {i.notes && <p className="text-slate-400 text-sm mt-2 whitespace-pre-wrap">{i.notes}</p>}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-white font-medium">{i.name}</p>
+                  {(i.category || i.typology || i.equipment || i.muscle || i.movement_pattern) && (
+                    <p className="text-slate-500 text-sm mt-1">
+                      {[i.muscle, i.movement_pattern, i.category, i.typology, i.equipment].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                  {i.notes && <p className="text-slate-400 text-sm mt-2 whitespace-pre-wrap">{i.notes}</p>}
+                </div>
+                {editingId === i.id ? (
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <select
+                      value={editMuscle}
+                      onChange={(e) => setEditMuscle(e.target.value)}
+                      className="px-2 py-1 rounded bg-slate-900 border border-slate-600 text-white text-sm"
+                    >
+                      <option value="">— Músculo —</option>
+                      {MUSCLE_OPTIONS.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={editPattern}
+                      onChange={(e) => setEditPattern(e.target.value)}
+                      className="px-2 py-1 rounded bg-slate-900 border border-slate-600 text-white text-sm"
+                    >
+                      <option value="">— Patrón —</option>
+                      {MOVEMENT_PATTERN_OPTIONS.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        disabled={savingEdit}
+                        className="px-2 py-1 rounded bg-sky-600 text-white text-xs hover:bg-sky-500 disabled:opacity-50"
+                      >
+                        {savingEdit ? '...' : 'Guardar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="px-2 py-1 rounded bg-slate-600 text-slate-200 text-xs hover:bg-slate-500"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEdit(i)}
+                    className="shrink-0 text-sky-400 text-sm hover:underline"
+                  >
+                    Editar
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

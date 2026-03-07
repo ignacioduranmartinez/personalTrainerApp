@@ -1,9 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { MOVEMENT_PATTERN_OPTIONS } from '../lib/exerciseLibraryDb'
+
+/** Formatea una fecha YYYY-MM-DD para mostrar; evita "Invalid Date". */
+function formatStatDate(dateStr: string | null | undefined): string {
+  if (dateStr == null || dateStr === '') return '—'
+  const d = dateStr.includes('T') ? new Date(dateStr) : new Date(dateStr + 'T00:00:00')
+  if (Number.isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const UNCLASSIFIED = 'Sin clasificar'
 
 interface TopEntry {
   exerciseId: string
   exerciseName: string
+  movementPattern: string
   bestWeight: number
   bestReps: number | null
   bestDate: string
@@ -55,14 +67,19 @@ export default function Stats() {
       }
 
       const exIds = Array.from(new Set(rows.map((r) => r.routine_exercise_id)))
-      const { data: exData } = await supabase
-        .from('routine_exercises')
-        .select('id, name')
-        .in('id', exIds)
+      const [{ data: exData }, { data: libraryData }] = await Promise.all([
+        supabase.from('routine_exercises').select('id, name').in('id', exIds),
+        supabase.from('exercise_library').select('name, movement_pattern').eq('user_id', user.id)
+      ])
 
       const nameById = new Map<string, string>()
       for (const e of (exData || []) as { id: string; name: string }[]) {
         nameById.set(e.id, e.name)
+      }
+
+      const patternByName = new Map<string, string>()
+      for (const lib of (libraryData || []) as { name: string; movement_pattern: string | null }[]) {
+        if (lib.movement_pattern) patternByName.set(lib.name.trim(), lib.movement_pattern)
       }
 
       const grouped = new Map<string, { name: string; rows: typeof rows }>()
@@ -86,9 +103,12 @@ export default function Stats() {
 
         if (!best.top_weight) continue
 
+        const movementPattern = patternByName.get(g.name.trim()) || UNCLASSIFIED
+
         stats.push({
           exerciseId: id,
           exerciseName: g.name,
+          movementPattern,
           bestWeight: Number(best.top_weight),
           bestReps: best.top_reps,
           bestDate: best.for_date,
@@ -98,7 +118,12 @@ export default function Stats() {
         })
       }
 
-      stats.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName))
+      stats.sort((a, b) => {
+        const orderA = MOVEMENT_PATTERN_OPTIONS.includes(a.movementPattern as 'Push' | 'Pull' | 'Legs') ? MOVEMENT_PATTERN_OPTIONS.indexOf(a.movementPattern as 'Push' | 'Pull' | 'Legs') : 99
+        const orderB = MOVEMENT_PATTERN_OPTIONS.includes(b.movementPattern as 'Push' | 'Pull' | 'Legs') ? MOVEMENT_PATTERN_OPTIONS.indexOf(b.movementPattern as 'Push' | 'Pull' | 'Legs') : 99
+        if (orderA !== orderB) return orderA - orderB
+        return a.exerciseName.localeCompare(b.exerciseName)
+      })
       setEntries(stats)
       setLoading(false)
     }
@@ -109,6 +134,16 @@ export default function Stats() {
   const filtered = entries.filter((e) =>
     e.exerciseName.toLowerCase().includes(filter.toLowerCase())
   )
+
+  const byPattern = useMemo(() => {
+    const sections: { pattern: string; entries: TopEntry[] }[] = []
+    const order = [...MOVEMENT_PATTERN_OPTIONS, UNCLASSIFIED]
+    for (const pattern of order) {
+      const list = filtered.filter((e) => e.movementPattern === pattern)
+      if (list.length > 0) sections.push({ pattern, entries: list })
+    }
+    return sections
+  }, [filtered])
 
   return (
     <div className="py-4">
@@ -134,30 +169,39 @@ export default function Stats() {
             className="mb-4 w-full max-w-sm px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500"
           />
 
-          <ul className="space-y-3">
-            {filtered.map((e) => (
-              <li
-                key={e.exerciseId}
-                className="rounded-xl bg-slate-800 border border-slate-700 p-4"
-              >
-                <p className="text-white font-semibold">{e.exerciseName}</p>
-                <p className="text-slate-400 text-sm mt-1">
-                  Mejor marca:{' '}
-                  <strong>
-                    {e.bestWeight} kg{e.bestReps != null ? ` x ${e.bestReps} reps` : ''}
-                  </strong>{' '}
-                  ({new Date(e.bestDate + 'Z').toLocaleDateString('es-ES')})
-                </p>
-                <p className="text-slate-400 text-sm">
-                  Última:{' '}
-                  <strong>
-                    {e.lastWeight} kg{e.lastReps != null ? ` x ${e.lastReps} reps` : ''}
-                  </strong>{' '}
-                  ({new Date(e.lastDate + 'Z').toLocaleDateString('es-ES')})
-                </p>
-              </li>
-            ))}
-          </ul>
+          <p className="text-slate-500 text-sm mb-4">
+            Marcas agrupadas por patrón de movimiento (asignado en Biblioteca de ejercicios).
+          </p>
+
+          {byPattern.map(({ pattern, entries: sectionEntries }) => (
+            <section key={pattern} className="mb-6">
+              <h2 className="text-sm font-medium text-slate-400 mb-2">{pattern}</h2>
+              <ul className="space-y-3">
+                {sectionEntries.map((e) => (
+                  <li
+                    key={e.exerciseId}
+                    className="rounded-xl bg-slate-800 border border-slate-700 p-4"
+                  >
+                    <p className="text-white font-semibold">{e.exerciseName}</p>
+                    <p className="text-slate-400 text-sm mt-1">
+                      Mejor marca:{' '}
+                      <strong>
+                        {e.bestWeight} kg{e.bestReps != null ? ` x ${e.bestReps} reps` : ''}
+                      </strong>{' '}
+                      ({formatStatDate(e.bestDate)})
+                    </p>
+                    <p className="text-slate-400 text-sm">
+                      Última:{' '}
+                      <strong>
+                        {e.lastWeight} kg{e.lastReps != null ? ` x ${e.lastReps} reps` : ''}
+                      </strong>{' '}
+                      ({formatStatDate(e.lastDate)})
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
         </>
       )}
     </div>

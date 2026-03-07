@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveRoutine } from '../lib/routineDb'
 import type { RoutineImportJSON, Exercise, DaySchedule, WeekSchedule } from '../types/routine'
-import { listLibraryExercises, type LibraryExercise } from '../lib/exerciseLibraryDb'
+import { listLibraryExercises, MUSCLE_OPTIONS, type LibraryExercise } from '../lib/exerciseLibraryDb'
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
@@ -25,6 +25,7 @@ export default function RoutineCreate() {
   const [libraryLoading, setLibraryLoading] = useState(false)
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [libraryQuery, setLibraryQuery] = useState('')
+  const [libraryMuscleFilter, setLibraryMuscleFilter] = useState('')
 
   function addWeek() {
     setWeeks((w) => [...w, emptyWeek()])
@@ -109,17 +110,23 @@ export default function RoutineCreate() {
   }
 
   const filteredLibrary = useMemo(() => {
+    let list = library
+    if (libraryMuscleFilter) {
+      list = list.filter((i) => (i.muscle ?? '') === libraryMuscleFilter)
+    }
     const q = fold(libraryQuery.trim())
-    if (!q) return library
-    return library.filter((i) => {
+    if (!q) return list
+    return list.filter((i) => {
       return (
         fold(i.name).includes(q) ||
         fold(i.category ?? '').includes(q) ||
         fold(i.typology ?? '').includes(q) ||
-        fold(i.equipment ?? '').includes(q)
+        fold(i.equipment ?? '').includes(q) ||
+        fold(i.muscle ?? '').includes(q) ||
+        fold(i.movement_pattern ?? '').includes(q)
       )
     })
-  }, [library, libraryQuery])
+  }, [library, libraryQuery, libraryMuscleFilter])
 
   function addFromLibrary(weekIdx: number, dayIdx: number, item: LibraryExercise) {
     setWeeks((w) => {
@@ -328,12 +335,24 @@ export default function RoutineCreate() {
               {libraryError && (
                 <p className="text-red-400 text-sm mb-3">Error: {libraryError}</p>
               )}
-              <input
-                value={libraryQuery}
-                onChange={(e) => setLibraryQuery(e.target.value)}
-                placeholder="Buscar por nombre, categoría, tipología o material..."
-                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500 mb-3"
-              />
+              <div className="flex flex-wrap gap-2 mb-3">
+                <input
+                  value={libraryQuery}
+                  onChange={(e) => setLibraryQuery(e.target.value)}
+                  placeholder="Buscar por nombre, categoría, músculo..."
+                  className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500"
+                />
+                <select
+                  value={libraryMuscleFilter}
+                  onChange={(e) => setLibraryMuscleFilter(e.target.value)}
+                  className="px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
+                >
+                  <option value="">Todos los músculos</option>
+                  {MUSCLE_OPTIONS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
               {libraryLoading ? (
                 <p className="text-slate-400 text-sm">Cargando biblioteca...</p>
               ) : filteredLibrary.length === 0 ? (
@@ -351,9 +370,9 @@ export default function RoutineCreate() {
                         className="w-full text-left rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 p-3"
                       >
                         <p className="text-white font-medium">{i.name}</p>
-                        {(i.category || i.typology || i.equipment) && (
+                        {(i.muscle || i.movement_pattern || i.category || i.typology || i.equipment) && (
                           <p className="text-slate-500 text-sm mt-0.5">
-                            {[i.category, i.typology, i.equipment].filter(Boolean).join(' · ')}
+                            {[i.muscle, i.movement_pattern, i.category, i.typology, i.equipment].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </button>
