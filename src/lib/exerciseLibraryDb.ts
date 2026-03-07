@@ -1,9 +1,9 @@
 import { supabase } from './supabase'
 
 /** Opciones de músculo en la biblioteca */
-export const MUSCLE_OPTIONS = ['Pecho', 'Hombro', 'Espalda', 'Biceps', 'Triceps', 'Pierna'] as const
+export const MUSCLE_OPTIONS = ['Pecho', 'Hombro', 'Espalda', 'Biceps', 'Triceps', 'Pierna', 'Core', 'Cardio'] as const
 /** Opciones de patrón de movimiento */
-export const MOVEMENT_PATTERN_OPTIONS = ['Push', 'Pull', 'Legs'] as const
+export const MOVEMENT_PATTERN_OPTIONS = ['Push', 'Pull', 'Legs', 'Core', 'Cardio'] as const
 
 export type MuscleOption = (typeof MUSCLE_OPTIONS)[number]
 export type MovementPatternOption = (typeof MOVEMENT_PATTERN_OPTIONS)[number]
