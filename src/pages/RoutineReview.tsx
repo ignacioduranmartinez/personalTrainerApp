@@ -62,7 +62,7 @@ export default function RoutineReview() {
               <button
                 type="button"
                 onClick={() => setSelectedDayIndex(idx)}
-                className="w-full text-left px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 text-white font-medium"
+                className="w-full text-left min-h-[52px] px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 active:bg-slate-700 text-white font-medium touch-manipulation"
               >
                 {getDayDisplayLabel(idx)}
                 {day.exercises.length > 0 && (
@@ -79,7 +79,7 @@ export default function RoutineReview() {
           <button
             type="button"
             onClick={() => setSelectedDayIndex(null)}
-            className="text-sky-400 text-sm mb-4 hover:underline"
+            className="min-h-[44px] py-2 text-sky-400 text-sm mb-4 hover:underline touch-manipulation"
           >
             ← Volver a la lista de días
           </button>
@@ -90,7 +90,7 @@ export default function RoutineReview() {
                 type="button"
                 onClick={() => handleDoThisToday(selectedDayIndex)}
                 disabled={logging}
-                className="mb-4 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+                className="mb-4 min-h-[48px] px-5 py-3 rounded-xl bg-sky-600 text-white text-base font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
               >
                 {logging ? 'Guardando...' : 'Hacer este entreno hoy'}
               </button>

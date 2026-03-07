@@ -209,7 +209,7 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                 <button
                   type="button"
                   onClick={openDemo}
-                  className="text-sm text-sky-400 hover:underline"
+                  className="min-h-[44px] inline-flex items-center py-2 text-sm text-sky-400 hover:underline touch-manipulation"
                 >
                   Ver vídeo de muestra
                 </button>
@@ -231,7 +231,7 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                 <button
                   type="button"
                   onClick={openDemo}
-                  className="text-sm text-sky-400 hover:underline"
+                  className="min-h-[44px] inline-flex items-center py-2 text-sm text-sky-400 hover:underline touch-manipulation"
                 >
                   Ver vídeo de muestra
                 </button>
@@ -428,33 +428,44 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
           </div>
         </div>
 
+        {/* Notas de la rutina (Gestionar): siempre visibles cuando el entrenador las ha dejado */}
+        {exercise.notes && exercise.notes.trim() !== '' && (
+          <div className="mt-3 pt-3 border-t border-slate-700">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Indicaciones de la rutina</p>
+            <p className="text-slate-300 text-sm mt-1 whitespace-pre-wrap">{exercise.notes}</p>
+          </div>
+        )}
+
         <div className="mt-3 pt-3 border-t border-slate-700">
           <button
             type="button"
             onClick={() => setShowNotes(!showNotes)}
-            className="text-sm text-slate-400 hover:text-white"
+            className="min-h-[44px] py-2.5 text-sm text-slate-400 hover:text-white active:text-white touch-manipulation w-full text-left"
           >
-            {showNotes ? 'Ocultar notas' : 'Notas'}
+            {showNotes ? 'Ocultar notas de esta sesión' : 'Notas de esta sesión'}
           </button>
           {showNotes && (
             <div className="mt-2 space-y-3">
               <div>
+                <p className="text-xs text-slate-500 mb-1">
+                  Solo para hoy ({forDate}). Otra sesión del mismo ejercicio puede tener otras notas.
+                </p>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   onBlur={() => routineExerciseId && saveNote(note)}
-                  placeholder="Escribe aquí tus notas del ejercicio..."
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm placeholder-slate-500 focus:ring-2 focus:ring-sky-500 resize-none"
+                  placeholder="Tus notas de esta sesión (opcional)"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500 resize-none min-h-[80px]"
                 />
                 {saving && <span className="text-xs text-slate-500">Guardando...</span>}
               </div>
               {!editable && routineExerciseId && (
-                <div className="pt-2 border-t border-slate-700 space-y-1">
+                <div className="pt-2 border-t border-slate-700 space-y-2">
                   <p className="text-xs text-slate-400">
                     Serie máxima del día (opcional)
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <input
                       type="number"
                       min={0}
@@ -464,9 +475,9 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                         setTopWeight(e.target.value ? Number(e.target.value) : null)
                       }
                       placeholder="Peso (kg)"
-                      className="w-24 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-xs text-white"
+                      className="w-24 min-h-[44px] rounded-xl bg-slate-900 border border-slate-600 px-3 py-2 text-white"
                     />
-                    <span className="text-xs text-slate-400">x</span>
+                    <span className="text-slate-400">x</span>
                     <input
                       type="number"
                       min={0}
@@ -475,13 +486,13 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
                         setTopReps(e.target.value ? Number(e.target.value) : null)
                       }
                       placeholder="Reps"
-                      className="w-20 rounded bg-slate-900 border border-slate-600 px-2 py-1.5 text-xs text-white"
+                      className="w-20 min-h-[44px] rounded-xl bg-slate-900 border border-slate-600 px-3 py-2 text-white"
                     />
                     <button
                       type="button"
                       onClick={() => saveTopSet(topWeight ?? null, topReps ?? null)}
                       disabled={savingTop}
-                      className="rounded bg-sky-600 px-3 py-1.5 text-xs text-white hover:bg-sky-500 disabled:opacity-50"
+                      className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2 text-sm text-white hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
                     >
                       {savingTop ? 'Guardando...' : 'Guardar serie'}
                     </button>

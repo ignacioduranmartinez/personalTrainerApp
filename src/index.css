@@ -5,10 +5,38 @@
 @layer base {
   html {
     @apply antialiased;
+    font-size: 16px; /* Evita zoom en focus en iOS */
   }
   body {
     @apply bg-slate-900 text-slate-100 min-h-screen;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Inputs/textarea 16px en móvil para no disparar zoom en iOS */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    input, select, textarea {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .main-content-safe {
+    padding-bottom: max(1.5rem, calc(5rem + env(safe-area-inset-bottom)));
+  }
+  @media (min-width: 768px) {
+    .main-content-safe {
+      padding-bottom: 1.5rem;
+    }
   }
 }

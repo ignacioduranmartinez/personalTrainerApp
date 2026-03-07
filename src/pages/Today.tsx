@@ -119,7 +119,7 @@ export default function Today() {
           type="button"
           onClick={handleStart}
           disabled={saving}
-          className="mt-4 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+          className="mt-4 min-h-[48px] w-full sm:w-auto px-6 py-3 rounded-xl bg-sky-600 text-white text-base font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
         >
           {saving ? 'Guardando...' : 'Empezar este entrenamiento'}
         </button>
@@ -149,7 +149,7 @@ export default function Today() {
           <button
             type="button"
             onClick={() => setShowFinishForm(true)}
-            className="mb-4 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-500"
+            className="mb-4 min-h-[48px] w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-600 text-white text-base font-medium hover:bg-amber-500 active:bg-amber-500 touch-manipulation"
           >
             Entrenamiento finalizado
           </button>
@@ -160,22 +160,22 @@ export default function Today() {
               value={sessionNotes}
               onChange={(e) => setSessionNotes(e.target.value)}
               placeholder="Cómo fue el entreno..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm mb-3"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-600 text-white mb-4 min-h-[80px]"
             />
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={() => handleFinish()}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-500 disabled:opacity-50"
+                className="min-h-[48px] flex-1 px-4 py-3 rounded-xl bg-amber-600 text-white text-base font-medium hover:bg-amber-500 active:bg-amber-500 disabled:opacity-50 touch-manipulation"
               >
                 {saving ? 'Guardando...' : 'Guardar y finalizar'}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowFinishForm(false); setSessionNotes('') }}
-                className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 text-sm"
+                className="min-h-[48px] px-4 py-3 rounded-xl bg-slate-700 text-slate-300 text-base touch-manipulation"
               >
                 Cancelar
               </button>
@@ -188,7 +188,7 @@ export default function Today() {
             type="button"
             onClick={handleStart}
             disabled={saving}
-            className="mb-4 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+            className="mb-4 min-h-[48px] w-full sm:w-auto px-6 py-3 rounded-xl bg-sky-600 text-white text-base font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
           >
             {saving ? 'Guardando...' : 'Empezar este entrenamiento'}
           </button>

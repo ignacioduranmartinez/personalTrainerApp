@@ -152,7 +152,7 @@ export default function ExerciseLibrary() {
     <div className="py-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-white">Biblioteca de ejercicios</h1>
-        <Link to="/manage" className="text-sm text-sky-400 hover:underline">
+        <Link to="/manage" className="min-h-[44px] inline-flex items-center text-sm text-sky-400 hover:underline touch-manipulation py-1">
           Volver a Gestionar
         </Link>
       </div>
@@ -161,19 +161,19 @@ export default function ExerciseLibrary() {
         Añade ejercicios aquí y luego podrás incorporarlos rápidamente al crear nuevas rutinas.
       </p>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={handleImport}
           disabled={importing}
-          className="px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 disabled:opacity-50"
+          className="min-h-[48px] px-5 py-3 rounded-xl bg-slate-700 text-white text-base font-medium hover:bg-slate-600 active:bg-slate-600 disabled:opacity-50 touch-manipulation"
         >
           {importing ? 'Importando...' : 'Importar ejercicios desde rutinas'}
         </button>
         <button
           type="button"
           onClick={load}
-          className="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-sm font-medium hover:bg-slate-700 border border-slate-700"
+          className="min-h-[48px] px-5 py-3 rounded-xl bg-slate-800 text-slate-200 text-base font-medium hover:bg-slate-700 border border-slate-700 touch-manipulation"
         >
           Refrescar
         </button>
@@ -188,7 +188,7 @@ export default function ExerciseLibrary() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre (obligatorio)"
-            className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm"
+            className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-900 border border-slate-600 text-white"
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input
@@ -259,7 +259,7 @@ export default function ExerciseLibrary() {
           <button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+            className="min-h-[48px] px-5 py-3 rounded-xl bg-sky-600 text-white text-base font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
           >
             {saving ? 'Guardando...' : 'Añadir a biblioteca'}
           </button>

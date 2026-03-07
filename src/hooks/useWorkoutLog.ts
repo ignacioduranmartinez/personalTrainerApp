@@ -271,8 +271,13 @@ export function useHistoryForDay(
   return { sessions, loading, refetch: load }
 }
 
-/** Lista de workout_log en un rango de fechas (para calendario) */
-export function useWorkoutLogsInRange(routineId: string | null, startDate: string, endDate: string) {
+/** Lista de workout_log en un rango de fechas (para calendario). refetchKey: incrementar para recargar. */
+export function useWorkoutLogsInRange(
+  routineId: string | null,
+  startDate: string,
+  endDate: string,
+  refetchKey?: number
+) {
   const [entries, setEntries] = useState<WorkoutLog[]>([])
   const [loading, setLoading] = useState(!!routineId)
 
@@ -301,12 +306,12 @@ export function useWorkoutLogsInRange(routineId: string | null, startDate: strin
     }
     load()
     return () => { cancelled = true }
-  }, [routineId, startDate, endDate])
+  }, [routineId, startDate, endDate, refetchKey])
 
   return { entries, loading }
 }
 
-/** Registrar entreno en una fecha concreta (para calendario / corrección) */
+/** Registrar entreno en una fecha concreta (para calendario / corrección). Marca como finalizado para que aparezca en el calendario. */
 export async function logWorkoutOnDate(
   routineId: string,
   forDate: string,
@@ -321,10 +326,46 @@ export async function logWorkoutOnDate(
       routine_id: routineId,
       for_date: forDate,
       routine_day_index: routineDayIndex,
-      session_notes: sessionNotes ?? null
+      session_notes: sessionNotes ?? null,
+      finished_at: new Date().toISOString()
     },
     { onConflict: 'user_id,routine_id,for_date' }
   )
+  return { error: error?.message ?? null }
+}
+
+/** Marcar como finalizado un entreno ya registrado en una fecha (para sesiones que quedaron "sin finalizar"). */
+export async function finishWorkoutOnDate(
+  routineId: string,
+  forDate: string
+): Promise<{ error: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { data: row } = await supabase
+    .from('workout_log')
+    .select('started_at, created_at')
+    .eq('user_id', user.id)
+    .eq('routine_id', routineId)
+    .eq('for_date', forDate)
+    .maybeSingle()
+
+  const r = row as { started_at?: string | null; created_at: string } | null
+  const startedAt = r?.started_at ?? r?.created_at
+  const now = new Date()
+  const durationSeconds = startedAt
+    ? Math.round((now.getTime() - new Date(startedAt).getTime()) / 1000)
+    : null
+
+  const { error } = await supabase
+    .from('workout_log')
+    .update({
+      finished_at: now.toISOString(),
+      duration_seconds: durationSeconds
+    })
+    .eq('user_id', user.id)
+    .eq('routine_id', routineId)
+    .eq('for_date', forDate)
   return { error: error?.message ?? null }
 }
 

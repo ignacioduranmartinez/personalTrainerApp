@@ -166,7 +166,7 @@ export default function Stats() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Buscar ejercicio..."
-            className="mb-4 w-full max-w-sm px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500"
+            className="mb-4 w-full max-w-sm min-h-[48px] px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500"
           />
 
           <p className="text-slate-500 text-sm mb-4">
@@ -180,7 +180,7 @@ export default function Stats() {
                 {sectionEntries.map((e) => (
                   <li
                     key={e.exerciseId}
-                    className="rounded-xl bg-slate-800 border border-slate-700 p-4"
+                    className="rounded-xl bg-slate-800 border border-slate-700 p-4 sm:p-4"
                   >
                     <p className="text-white font-semibold">{e.exerciseName}</p>
                     <p className="text-slate-400 text-sm mt-1">

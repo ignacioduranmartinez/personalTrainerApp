@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useActiveRoutine } from '../hooks/useRoutines'
-import { useWorkoutLogsInRange, logWorkoutOnDate } from '../hooks/useWorkoutLog'
+import { useWorkoutLogsInRange, logWorkoutOnDate, finishWorkoutOnDate } from '../hooks/useWorkoutLog'
 import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
 import { formatDuration } from '../lib/restTimer'
 import { useSessionExerciseNotes } from '../hooks/useSessionExerciseNotes'
@@ -33,6 +33,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [loggingDayIndex, setLoggingDayIndex] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [refetchKey, setRefetchKey] = useState(0)
 
   const { activeRoutine, loading: routineLoading } = useActiveRoutine(
     new Date(year, month - 1, 1).toISOString().slice(0, 10)
@@ -44,19 +45,24 @@ export default function Calendar() {
   const { entries, loading: logLoading } = useWorkoutLogsInRange(
     activeRoutine?.id ?? null,
     start,
-    end
+    end,
+    refetchKey
   )
   const linearDays = activeRoutine ? getLinearDays(activeRoutine) : []
   const entriesByDate = useMemo(() => {
-    const m = new Map<string, { routine_day_index: number; session_notes: string | null; duration_seconds: number | null }>()
+    const m = new Map<string, {
+      routine_day_index: number
+      session_notes: string | null
+      duration_seconds: number | null
+      isFinished: boolean
+    }>()
     for (const e of entries) {
-      if (e.finished_at != null) {
-        m.set(e.for_date, {
-          routine_day_index: e.routine_day_index,
-          session_notes: e.session_notes,
-          duration_seconds: e.duration_seconds ?? null
-        })
-      }
+      m.set(e.for_date, {
+        routine_day_index: e.routine_day_index,
+        session_notes: e.session_notes,
+        duration_seconds: e.duration_seconds ?? null,
+        isFinished: e.finished_at != null
+      })
     }
     return m
   }, [entries])
@@ -103,6 +109,29 @@ export default function Calendar() {
     if (!error) {
       setSelectedDate(null)
       setLoggingDayIndex(null)
+      setRefetchKey((k) => k + 1)
+    }
+  }
+
+  async function handleMarkFinished() {
+    if (!activeRoutine || selectedDate == null) return
+    setSaving(true)
+    const { error } = await finishWorkoutOnDate(activeRoutine.id!, selectedDate)
+    setSaving(false)
+    if (!error) setRefetchKey((k) => k + 1)
+  }
+
+  async function handleChangeDay(newDayIndex: number) {
+    if (!activeRoutine || selectedDate == null) return
+    setSaving(true)
+    const { error } = await logWorkoutOnDate(
+      activeRoutine.id!,
+      selectedDate,
+      newDayIndex
+    )
+    setSaving(false)
+    if (!error) {
+      setRefetchKey((k) => k + 1)
     }
   }
 
@@ -121,44 +150,47 @@ export default function Calendar() {
             <button
               type="button"
               onClick={prevMonth}
-              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 active:bg-slate-700 touch-manipulation"
             >
               ←
             </button>
-            <span className="text-white font-medium">
+            <span className="text-white font-medium text-base">
               {MONTHS[month - 1]} {year}
             </span>
             <button
               type="button"
               onClick={nextMonth}
-              className="p-2 rounded-lg text-slate-400 hover:bg-slate-800"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-800 active:bg-slate-700 touch-manipulation"
             >
               →
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-2 text-center text-xs text-slate-500">
+          <div className="grid grid-cols-7 gap-1.5 mb-2 text-center text-xs text-slate-500">
             {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
               <div key={d}>{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1.5">
             {calendarDays.map((d, i) => {
               if (d == null) return <div key={i} />
               const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
               const entry = entriesByDate.get(dateStr)
               const label = entry != null ? getDayDisplayLabel(entry.routine_day_index) : null
               const isSelected = selectedDate === dateStr
+              const isUnfinished = entry != null && !entry.isFinished
               return (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`min-h-[44px] rounded-lg text-sm ${
+                  className={`min-h-[48px] sm:min-h-[44px] rounded-xl text-sm touch-manipulation ${
                     isSelected
                       ? 'bg-sky-600 text-white'
                       : entry
-                        ? 'bg-slate-700 text-white'
+                        ? isUnfinished
+                          ? 'bg-slate-700/80 text-amber-200 border border-amber-600/50'
+                          : 'bg-slate-700 text-white'
                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
@@ -170,7 +202,7 @@ export default function Calendar() {
           </div>
 
           {selectedDate && (
-            <div className="mt-6 p-4 rounded-xl bg-slate-800 border border-slate-700">
+            <div className="mt-6 p-4 sm:p-4 rounded-xl bg-slate-800 border border-slate-700">
               <p className="text-white font-medium mb-2">
                 {new Date(selectedDate + 'Z').toLocaleDateString('es-ES', {
                   weekday: 'long',
@@ -183,7 +215,20 @@ export default function Calendar() {
                 <>
                   <p className="text-slate-400 text-sm">
                     Entreno: <strong>{selectedLabel}</strong>
+                    {!selectedEntry.isFinished && (
+                      <span className="text-amber-400 ml-1">(sin finalizar)</span>
+                    )}
                   </p>
+                  {!selectedEntry.isFinished && (
+                    <button
+                      type="button"
+                      onClick={handleMarkFinished}
+                      disabled={saving}
+                      className="mt-2 min-h-[44px] px-4 py-3 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-500 active:bg-amber-500 disabled:opacity-50 touch-manipulation"
+                    >
+                      {saving ? 'Guardando...' : 'Marcar como finalizado'}
+                    </button>
+                  )}
                   {selectedEntry.duration_seconds != null && selectedEntry.duration_seconds > 0 && (
                     <p className="text-amber-400/90 text-sm mt-1">
                       Duración: {formatDuration(selectedEntry.duration_seconds)}
@@ -194,7 +239,7 @@ export default function Calendar() {
                   )}
                   {selectedExercises.length > 0 && !sessionNotesLoading && (
                     <div className="mt-3">
-                      <p className="text-slate-400 text-xs mb-1">Notas por ejercicio:</p>
+                      <p className="text-slate-400 text-xs mb-1">Notas de esa sesión por ejercicio:</p>
                       <ul className="space-y-1 text-sm">
                         {sessionExerciseNotes.some((n) => n.note) ? (
                           sessionExerciseNotes
@@ -211,6 +256,22 @@ export default function Calendar() {
                       </ul>
                     </div>
                   )}
+                  <div className="mt-3 pt-3 border-t border-slate-700">
+                    <p className="text-slate-400 text-xs mb-2">Corregir día de la rutina:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {linearDays.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleChangeDay(idx)}
+                          disabled={saving || selectedEntry.routine_day_index === idx}
+                          className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 text-sm font-medium hover:bg-slate-600 active:bg-slate-600 disabled:opacity-50 disabled:cursor-default touch-manipulation"
+                        >
+                          {getDayDisplayLabel(idx)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <p className="text-slate-500 text-sm mb-3">Sin entreno registrado.</p>
@@ -224,7 +285,7 @@ export default function Calendar() {
                         key={idx}
                         type="button"
                         onClick={() => setLoggingDayIndex(idx)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600"
+                        className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 text-sm font-medium hover:bg-slate-600 active:bg-slate-600 touch-manipulation"
                       >
                         {getDayDisplayLabel(idx)}
                       </button>
@@ -236,19 +297,19 @@ export default function Calendar() {
                   <p className="text-slate-400 text-sm">
                     Registrar como: <strong>{loggingDayIndex != null ? getDayDisplayLabel(loggingDayIndex) : ''}</strong>
                   </p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-3">
                     <button
                       type="button"
                       onClick={handleLogForDate}
                       disabled={saving}
-                      className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm disabled:opacity-50"
+                      className="min-h-[44px] px-4 py-3 rounded-xl bg-sky-600 text-white text-sm font-medium disabled:opacity-50 touch-manipulation"
                     >
                       {saving ? 'Guardando...' : 'Guardar'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setLoggingDayIndex(null)}
-                      className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 text-sm"
+                      className="min-h-[44px] px-4 py-3 rounded-xl bg-slate-700 text-slate-300 text-sm touch-manipulation"
                     >
                       Cancelar
                     </button>

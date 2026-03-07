@@ -58,7 +58,7 @@ export function RestTimer({ restSeconds: restSec, notes, onComplete }: RestTimer
       <button
         type="button"
         onClick={start}
-        className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-600"
+        className="mt-2 min-h-[44px] inline-flex items-center gap-2 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-600 active:bg-slate-600 touch-manipulation"
       >
         <span aria-hidden>⏱</span>
         Temporizador {formatRestLabel(totalSeconds)}
@@ -71,7 +71,7 @@ export function RestTimer({ restSeconds: restSec, notes, onComplete }: RestTimer
   const display = `${m}:${String(s).padStart(2, '0')}`
 
   return (
-    <div className="mt-1.5 inline-flex items-center gap-2 rounded-lg bg-amber-900/40 px-2.5 py-1.5 text-sm font-mono text-amber-200">
+    <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-amber-900/40 px-4 py-2.5 min-h-[44px] text-sm font-mono text-amber-200">
       <span>⏱ {display}</span>
       <button
         type="button"
@@ -79,7 +79,7 @@ export function RestTimer({ restSeconds: restSec, notes, onComplete }: RestTimer
           setRunning(false)
           if (intervalRef.current) clearInterval(intervalRef.current)
         }}
-        className="text-xs text-slate-400 hover:text-white"
+        className="min-h-[36px] px-2 py-1 text-sm text-slate-400 hover:text-white active:text-white touch-manipulation"
       >
         Parar
       </button>

@@ -62,14 +62,14 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-sky-600 text-white font-medium hover:bg-sky-500 disabled:opacity-50"
+            className="w-full min-h-[48px] py-3 rounded-xl bg-sky-600 text-white text-base font-medium hover:bg-sky-500 active:bg-sky-500 disabled:opacity-50 touch-manipulation"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-400">
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-sky-400 hover:underline">
+          <Link to="/register" className="text-sky-400 hover:underline min-h-[44px] inline-flex items-center touch-manipulation">
             Registrarse
           </Link>
         </p>

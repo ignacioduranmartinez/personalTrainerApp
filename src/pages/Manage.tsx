@@ -30,16 +30,16 @@ export default function Manage() {
         <p className="text-slate-400 text-sm mb-2">
           Crear nueva rutina, importar JSON o ver y asignar fechas.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Link
             to="/routines"
-            className="inline-block px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600"
+            className="inline-flex items-center min-h-[48px] px-5 py-3 rounded-xl bg-slate-700 text-white text-base font-medium hover:bg-slate-600 active:bg-slate-600 touch-manipulation"
           >
             Ir a Rutinas
           </Link>
           <Link
             to="/library"
-            className="inline-block px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600"
+            className="inline-flex items-center min-h-[48px] px-5 py-3 rounded-xl bg-slate-700 text-white text-base font-medium hover:bg-slate-600 active:bg-slate-600 touch-manipulation"
           >
             Biblioteca de ejercicios
           </Link>
@@ -62,7 +62,7 @@ export default function Manage() {
                 <button
                   type="button"
                   onClick={() => setSelectedDayIndex(idx)}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 text-white font-medium"
+                  className="w-full text-left min-h-[52px] px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 active:bg-slate-700 text-white font-medium touch-manipulation"
                 >
                   {getDayDisplayLabel(idx)}
                   {day.exercises.length > 0 && (
