@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useActiveRoutine } from '../hooks/useRoutines'
 import { useWorkoutLogsInRange, logWorkoutOnDate, finishWorkoutOnDate } from '../hooks/useWorkoutLog'
-import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
+import { getLinearDays, getDayLabel } from '../lib/routineUtils'
 import { formatDuration } from '../lib/restTimer'
 import { useSessionExerciseNotes } from '../hooks/useSessionExerciseNotes'
 
@@ -85,7 +85,7 @@ export default function Calendar() {
 
   const selectedEntry = selectedDate ? entriesByDate.get(selectedDate) : null
   const selectedLabel =
-    selectedEntry != null ? getDayDisplayLabel(selectedEntry.routine_day_index) : null
+    selectedEntry != null ? getDayLabel(linearDays, selectedEntry.routine_day_index) : null
   const selectedExercises =
     selectedEntry != null && linearDays[selectedEntry.routine_day_index]
       ? linearDays[selectedEntry.routine_day_index].exercises
@@ -176,7 +176,7 @@ export default function Calendar() {
               if (d == null) return <div key={i} />
               const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
               const entry = entriesByDate.get(dateStr)
-              const label = entry != null ? getDayDisplayLabel(entry.routine_day_index) : null
+              const label = entry != null ? getDayLabel(linearDays, entry.routine_day_index) : null
               const isSelected = selectedDate === dateStr
               const isUnfinished = entry != null && !entry.isFinished
               return (
@@ -267,7 +267,7 @@ export default function Calendar() {
                           disabled={saving || selectedEntry.routine_day_index === idx}
                           className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 text-sm font-medium hover:bg-slate-600 active:bg-slate-600 disabled:opacity-50 disabled:cursor-default touch-manipulation"
                         >
-                          {getDayDisplayLabel(idx)}
+                          {getDayLabel(linearDays, idx)}
                         </button>
                       ))}
                     </div>
@@ -287,7 +287,7 @@ export default function Calendar() {
                         onClick={() => setLoggingDayIndex(idx)}
                         className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-700 text-slate-200 text-sm font-medium hover:bg-slate-600 active:bg-slate-600 touch-manipulation"
                       >
-                        {getDayDisplayLabel(idx)}
+                        {getDayLabel(linearDays, idx)}
                       </button>
                     ))}
                   </div>
@@ -295,7 +295,7 @@ export default function Calendar() {
               ) : (
                 <div className="mt-3">
                   <p className="text-slate-400 text-sm">
-                    Registrar como: <strong>{loggingDayIndex != null ? getDayDisplayLabel(loggingDayIndex) : ''}</strong>
+                    Registrar como: <strong>{loggingDayIndex != null ? getDayLabel(linearDays, loggingDayIndex) : ''}</strong>
                   </p>
                   <div className="flex gap-2 mt-3">
                     <button

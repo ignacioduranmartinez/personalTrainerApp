@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useActiveRoutine } from '../hooks/useRoutines'
 import { useNextDayIndex, logWorkoutToday } from '../hooks/useWorkoutLog'
-import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
+import { getLinearDays, getDayLabel } from '../lib/routineUtils'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { DayHistory } from '../components/DayHistory'
 
@@ -64,7 +64,7 @@ export default function RoutineReview() {
                 onClick={() => setSelectedDayIndex(idx)}
                 className="w-full text-left min-h-[52px] px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 active:bg-slate-700 text-white font-medium touch-manipulation"
               >
-                {getDayDisplayLabel(idx)}
+                {getDayLabel(linearDays, idx)}
                 {day.exercises.length > 0 && (
                   <span className="text-slate-500 text-sm ml-2">
                     ({day.exercises.length} ejercicios)
@@ -85,7 +85,7 @@ export default function RoutineReview() {
           </button>
           {selectedDay && (
             <>
-              <h2 className="text-lg font-semibold text-white mb-4">{getDayDisplayLabel(selectedDayIndex ?? 0)}</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">{getDayLabel(linearDays, selectedDayIndex ?? 0)}</h2>
               <button
                 type="button"
                 onClick={() => handleDoThisToday(selectedDayIndex)}

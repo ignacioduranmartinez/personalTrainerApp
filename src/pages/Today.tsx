@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useActiveRoutine } from '../hooks/useRoutines'
 import { useNextDayIndex, useWorkoutLogForDate, startWorkoutToday, finishWorkoutToday } from '../hooks/useWorkoutLog'
-import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
+import { getLinearDays, getDayLabel } from '../lib/routineUtils'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { DayHistory } from '../components/DayHistory'
 
@@ -113,7 +113,9 @@ export default function Today() {
     return (
       <div className="py-8">
         <h2 className="text-lg font-semibold text-white mb-1">{activeRoutine.name}</h2>
-        <p className="text-slate-500 text-sm mb-4">Próximo entreno: {getDayDisplayLabel(displayDayIndex)}</p>
+        <p className="text-slate-500 text-sm mb-4">
+          Toca en la secuencia: <strong>{getDayLabel(linearDays, displayDayIndex)}</strong>
+        </p>
         <p className="text-slate-400 text-sm">No hay ejercicios en este día.</p>
         <button
           type="button"
@@ -131,17 +133,20 @@ export default function Today() {
   }
 
   const exercises = daySchedule?.exercises ?? []
-  const dayLabel = getDayDisplayLabel(displayDayIndex)
+  const dayLabel = getDayLabel(linearDays, displayDayIndex)
 
   return (
     <div className="py-4">
       <h2 className="text-lg font-semibold text-white mb-1">{activeRoutine.name}</h2>
-      <p className="text-slate-500 text-sm mb-4">
+      <p className="text-slate-500 text-sm mb-1">
         {inProgress ? (
           <>Entrenamiento en curso: <strong>{dayLabel}</strong></>
         ) : (
-          <>Tu próximo entreno: <strong>{dayLabel}</strong></>
+          <>Toca en la secuencia: <strong>{dayLabel}</strong></>
         )}
+      </p>
+      <p className="text-slate-600 text-xs mb-4">
+        El siguiente día de la rutina según tu último entreno (no depende del día de la semana).
       </p>
 
       {inProgress ? (

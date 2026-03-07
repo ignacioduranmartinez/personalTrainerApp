@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useActiveRoutine } from '../hooks/useRoutines'
-import { getLinearDays, getDayDisplayLabel } from '../lib/routineUtils'
+import { getLinearDays, getDayLabel } from '../lib/routineUtils'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { deleteAllWorkoutHistory } from '../hooks/useWorkoutLog'
 
@@ -64,7 +64,7 @@ export default function Manage() {
                   onClick={() => setSelectedDayIndex(idx)}
                   className="w-full text-left min-h-[52px] px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-slate-600 active:bg-slate-700 text-white font-medium touch-manipulation"
                 >
-                  {getDayDisplayLabel(idx)}
+                  {getDayLabel(linearDays, idx)}
                   {day.exercises.length > 0 && (
                     <span className="text-slate-500 text-sm ml-2">
                       ({day.exercises.length} ejercicios)
@@ -85,7 +85,7 @@ export default function Manage() {
             </button>
             {selectedDay && (
               <>
-                <h3 className="text-lg font-semibold text-white mb-4">{getDayDisplayLabel(selectedDayIndex)}</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">{getDayLabel(linearDays, selectedDayIndex)}</h3>
                 <p className="text-slate-500 text-sm mb-4">
                   Aquí puedes añadir/editar vídeo de muestra y tiempo de descanso por ejercicio.
                 </p>
