@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { getNextDayOverride, clearNextDayOverride } from '../lib/routineDb'
 import type { WorkoutLog, PastSession } from '../types/routine'
 
 /** Último registro de workout_log para una rutina (el de fecha más reciente que esté finalizado, para calcular "próximo día") */
@@ -41,11 +42,31 @@ export function useLastWorkoutLog(routineId: string | null, refetchKey?: number)
 
 /**
  * Índice del próximo día de la rutina (0-based).
- * Si no hay logs → 0. Si último fue k y hay k+1 días → k+1. Si último fue el último día → 0.
+ * Si el entrenador fijó un override, se usa ese; si no, se calcula del último log (siguiente en secuencia).
  */
 export function useNextDayIndex(routineId: string | null, totalDays: number, refetchKey?: number) {
-  const { lastLog, loading } = useLastWorkoutLog(routineId, refetchKey)
-  const nextIndex =
+  const { lastLog, loading: logLoading } = useLastWorkoutLog(routineId, refetchKey)
+  const [override, setOverride] = useState<number | null>(null)
+  const [overrideLoading, setOverrideLoading] = useState(!!routineId)
+
+  useEffect(() => {
+    if (!routineId) {
+      setOverride(null)
+      setOverrideLoading(false)
+      return
+    }
+    let cancelled = false
+    setOverrideLoading(true)
+    getNextDayOverride(routineId).then((v) => {
+      if (!cancelled) {
+        setOverride(v)
+        setOverrideLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [routineId, refetchKey])
+
+  const fromLog =
     totalDays <= 0
       ? 0
       : !lastLog
@@ -53,7 +74,13 @@ export function useNextDayIndex(routineId: string | null, totalDays: number, ref
         : lastLog.routine_day_index >= totalDays - 1
           ? 0
           : lastLog.routine_day_index + 1
-  return { nextDayIndex: nextIndex, lastLog, loading }
+
+  const nextIndex =
+    override != null && override >= 0 && override < totalDays
+      ? override
+      : fromLog
+
+  return { nextDayIndex: nextIndex, lastLog, loading: logLoading || overrideLoading, override }
 }
 
 /** Obtener el registro de workout_log para una fecha concreta */
@@ -91,7 +118,7 @@ export function useWorkoutLogForDate(routineId: string | null, forDate: string, 
   return { todayLog: log, loading }
 }
 
-/** Empezar este entrenamiento: registra la sesión de hoy (sin finalizar). Las notas por ejercicio se guardan al escribirlas. */
+/** Empezar este entrenamiento: registra la sesión de hoy (sin finalizar). Limpia el override de "próximo día" si lo había. */
 export async function startWorkoutToday(routineId: string, routineDayIndex: number): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
@@ -110,7 +137,10 @@ export async function startWorkoutToday(routineId: string, routineDayIndex: numb
   const { error: upsertError } = await supabase
     .from('workout_log')
     .upsert(row, { onConflict: 'user_id,routine_id,for_date' })
-  if (!upsertError) return { error: null }
+  if (!upsertError) {
+    await clearNextDayOverride(routineId)
+    return { error: null }
+  }
 
   // Si falla el upsert (p. ej. constraint en algunos proyectos), intentar update o insert
   const { data: existing } = await supabase
@@ -132,9 +162,11 @@ export async function startWorkoutToday(routineId: string, routineDayIndex: numb
       .eq('user_id', user.id)
       .eq('routine_id', routineId)
       .eq('for_date', forDate)
+    if (!updateErr) await clearNextDayOverride(routineId)
     return { error: updateErr?.message ?? null }
   }
   const { error: insertErr } = await supabase.from('workout_log').insert(row)
+  if (!insertErr) await clearNextDayOverride(routineId)
   return { error: insertErr?.message ?? null }
 }
 

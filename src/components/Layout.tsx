@@ -47,16 +47,15 @@ export default function Layout() {
         className="sticky top-0 z-20 bg-slate-800/95 border-b border-slate-700 shrink-0"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="flex items-center justify-between h-12 md:h-14 px-4 max-w-2xl mx-auto">
-          <span className="text-slate-400 text-sm font-medium hidden md:block">Rutinas</span>
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+        <div className="flex items-center justify-between h-12 md:h-14 px-4 max-w-2xl mx-auto gap-2">
+          {/* Desktop: barra única, sin título duplicado; enlaces en una línea */}
+          <nav className="hidden md:flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto">
             {navItems.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] flex items-center ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
+                  `shrink-0 px-3 py-2 rounded-lg text-sm font-medium h-9 flex items-center whitespace-nowrap ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
                 }
               >
                 {label}
@@ -67,20 +66,22 @@ export default function Layout() {
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] flex items-center ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
+                  `shrink-0 px-3 py-2 rounded-lg text-sm font-medium h-9 flex items-center whitespace-nowrap ${isActive ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`
                 }
               >
                 {label}
               </NavLink>
             ))}
+          </nav>
+          <div className="hidden md:flex items-center shrink-0">
             <button
               type="button"
               onClick={handleLogout}
-              className="px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white min-h-[44px]"
+              className="px-3 py-2 rounded-lg text-sm font-medium h-9 text-slate-400 hover:text-white whitespace-nowrap"
             >
               Salir
             </button>
-          </nav>
+          </div>
           <div className="md:hidden w-8" />
         </div>
       </header>

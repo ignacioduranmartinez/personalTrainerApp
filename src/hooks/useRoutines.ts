@@ -66,7 +66,7 @@ function buildRoutineFromRows(
             : undefined
       })
     )
-    dayMapInner.set(d.day_index, { label: d.label, exercises: exList })
+    dayMapInner.set(d.day_index, { id: d.id, label: d.label, exercises: exList })
   })
 
   const weeks: WeekSchedule[] = []

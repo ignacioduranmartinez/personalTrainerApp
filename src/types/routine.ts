@@ -18,6 +18,8 @@ export interface Exercise {
 }
 
 export interface DaySchedule {
+  /** id de routine_days (para editar nombre del día) */
+  id?: string
   label: string
   exercises: Exercise[]
 }

@@ -78,6 +78,63 @@ export async function updateRoutineDates(
   return !error
 }
 
+export async function updateRoutineName(routineId: string, name: string): Promise<{ error: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+  const { error } = await supabase
+    .from('routines')
+    .update({ name: name.trim() })
+    .eq('id', routineId)
+    .eq('user_id', user.id)
+  return { error: error?.message ?? null }
+}
+
+export async function updateRoutineDayLabel(dayId: string, label: string): Promise<{ error: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+  const { error } = await supabase
+    .from('routine_days')
+    .update({ label: label.trim() })
+    .eq('id', dayId)
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
+/** Override del próximo día: el entrenador puede fijar "el próximo entreno será Día X". */
+export async function setNextDayOverride(routineId: string, nextDayIndex: number): Promise<{ error: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+  const { error } = await supabase
+    .from('user_routine_next_override')
+    .upsert(
+      { user_id: user.id, routine_id: routineId, next_day_index: nextDayIndex, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,routine_id' }
+    )
+  return { error: error?.message ?? null }
+}
+
+export async function getNextDayOverride(routineId: string): Promise<number | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('user_routine_next_override')
+    .select('next_day_index')
+    .eq('user_id', user.id)
+    .eq('routine_id', routineId)
+    .maybeSingle()
+  return data != null ? (data as { next_day_index: number }).next_day_index : null
+}
+
+export async function clearNextDayOverride(routineId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase
+    .from('user_routine_next_override')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('routine_id', routineId)
+}
+
 /** Activa esta rutina desde hoy: pone start_date=hoy y end_date=null, y pone end_date=ayer en cualquier otra que estuviera activa hoy. */
 export async function setRoutineActive(routineId: string): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
