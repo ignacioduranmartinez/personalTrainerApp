@@ -92,11 +92,14 @@ export async function updateRoutineName(routineId: string, name: string): Promis
 export async function updateRoutineDayLabel(dayId: string, label: string): Promise<{ error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('routine_days')
     .update({ label: label.trim() })
     .eq('id', dayId)
+    .select('id')
+    .maybeSingle()
   if (error) return { error: error.message }
+  if (!data) return { error: 'No se pudo actualizar el día (¿permisos o rutina de otro usuario?)' }
   return { error: null }
 }
 

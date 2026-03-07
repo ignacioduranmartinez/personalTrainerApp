@@ -37,6 +37,8 @@ export default function RoutineDetail() {
   const [savingOverride, setSavingOverride] = useState(false)
   const [addingDay, setAddingDay] = useState(false)
   const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
+  const [errorDayLabel, setErrorDayLabel] = useState<string | null>(null)
+  const [errorOverride, setErrorOverride] = useState<string | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -106,22 +108,34 @@ export default function RoutineDetail() {
 
   async function handleSaveDayLabel(dayIdx: number) {
     const day = linearDays[dayIdx]
-    if (!day?.id || dayLabels[dayIdx] === undefined) return
+    setErrorDayLabel(null)
+    if (dayLabels[dayIdx] === undefined) return
+    if (!day?.id) {
+      setErrorDayLabel('No se puede guardar: recarga la página e inténtalo de nuevo.')
+      return
+    }
     setSavingDayIdx(dayIdx)
     const { error } = await updateRoutineDayLabel(day.id, dayLabels[dayIdx])
     setSavingDayIdx(null)
-    if (!error) refetch()
+    if (error) {
+      setErrorDayLabel(error)
+      return
+    }
+    refetch()
   }
 
   async function handleSetNextDayOverride(dayIndex: number) {
     if (!id) return
+    setErrorOverride(null)
     setSavingOverride(true)
     const { error } = await setNextDayOverride(id, dayIndex)
     setSavingOverride(false)
-    if (!error) {
-      setNextDayOverrideState(dayIndex)
-      refetch()
+    if (error) {
+      setErrorOverride(error)
+      return
     }
+    setNextDayOverrideState(dayIndex)
+    refetch()
   }
 
   async function handleClearNextDayOverride() {
@@ -206,17 +220,16 @@ export default function RoutineDetail() {
                   }}
                   className="flex-1 min-w-[120px] min-h-[40px] px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
                 />
-                {day.id && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleSaveDayLabel(idx)}
-                      disabled={savingDayIdx === idx}
-                      className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600 disabled:opacity-50"
-                    >
-                      {savingDayIdx === idx ? 'Guardando...' : 'Guardar'}
-                    </button>
-                    {linearDays.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleSaveDayLabel(idx)}
+                  disabled={savingDayIdx === idx || !day.id}
+                  title={!day.id ? 'Recarga la página para poder guardar' : undefined}
+                  className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600 disabled:opacity-50"
+                >
+                  {savingDayIdx === idx ? 'Guardando...' : 'Guardar'}
+                </button>
+                {day.id && linearDays.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleDeleteDay(day.id!)}
@@ -226,11 +239,12 @@ export default function RoutineDetail() {
                         {deletingDayId === day.id ? 'Eliminando...' : 'Eliminar'}
                       </button>
                     )}
-                  </>
-                )}
               </li>
             ))}
           </ul>
+        {errorDayLabel && (
+          <p className="mt-2 text-sm text-red-400" role="alert">{errorDayLabel}</p>
+        )}
         <button
           type="button"
           onClick={handleAddDay}
@@ -275,6 +289,14 @@ export default function RoutineDetail() {
               Quitar fijación
             </button>
           </div>
+          {errorOverride && (
+            <p className="mt-2 text-sm text-red-400" role="alert">
+              {errorOverride}
+              {errorOverride.includes('relation') || errorOverride.includes('does not exist')
+                ? ' Ejecuta en Supabase la migración: 20260301_user_routine_next_override.sql'
+                : ''}
+            </p>
+          )}
           <p className="text-slate-500 text-xs mt-2">
             {nextDayOverride != null ? `Próximo entreno: ${getDayLabel(linearDays, nextDayOverride)}` : 'Sin fijar (se usa la secuencia automática)'}
           </p>
