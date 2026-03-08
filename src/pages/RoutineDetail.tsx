@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   updateRoutineDates,
@@ -53,18 +53,9 @@ export default function RoutineDetail() {
   const [deletingExId, setDeletingExId] = useState<string | null>(null)
   const [reorderingDayIdx, setReorderingDayIdx] = useState<number | null>(null)
   const [errorExercises, setErrorExercises] = useState<string | null>(null)
-  const [editingSetsReps, setEditingSetsReps] = useState<Record<string, { sets: string; reps: string }>>({})
-  const editingSetsRepsRef = useRef(editingSetsReps)
-  useEffect(() => {
-    editingSetsRepsRef.current = editingSetsReps
-  }, [editingSetsReps])
-  const [savingSetsRepsId, setSavingSetsRepsId] = useState<string | null>(null)
-  const [editingIntensity, setEditingIntensity] = useState<Record<string, string>>({})
-  const editingIntensityRef = useRef(editingIntensity)
-  useEffect(() => {
-    editingIntensityRef.current = editingIntensity
-  }, [editingIntensity])
-  const [savingIntensityId, setSavingIntensityId] = useState<string | null>(null)
+  /** Cambios pendientes por ejercicio (series, repeticiones, intensidad). Se guardan al pulsar "Actualizar día". */
+  const [pendingDayUpdates, setPendingDayUpdates] = useState<Record<string, { sets: string; reps: string; intensity: string }>>({})
+  const [savingDayUpdateIdx, setSavingDayUpdateIdx] = useState<number | null>(null)
   const isActive = activeRoutine?.id === id
 
   useEffect(() => {
@@ -229,39 +220,49 @@ export default function RoutineDetail() {
     else refetch()
   }
 
-  async function handleSaveSetsReps(exId: string, setsStr: string, repsStr: string) {
-    const sets = setsStr.trim() === '' ? null : parseInt(setsStr, 10)
-    const reps = repsStr.trim() === '' ? null : repsStr.trim()
+  /** Guarda todos los cambios pendientes de series, repeticiones e intensidad del día. */
+  async function handleUpdateDay(dayIdx: number) {
+    const day = linearDays[dayIdx]
+    if (!day?.id) return
     setErrorExercises(null)
-    setSavingSetsRepsId(exId)
-    const { error } = await updateRoutineExerciseSetsReps(exId, sets, reps)
-    setSavingSetsRepsId(null)
-    if (error) setErrorExercises(error)
-    else {
-      setEditingSetsReps((prev) => {
-        const next = { ...prev }
-        delete next[exId]
-        return next
-      })
-      refetch()
+    setSavingDayUpdateIdx(dayIdx)
+    const exerciseIdsToClear: string[] = []
+    for (const ex of day.exercises) {
+      if (!ex.id) continue
+      const pending = pendingDayUpdates[ex.id]
+      const setsStr = pending?.sets ?? String(ex.sets ?? '')
+      const repsStr = pending?.reps ?? (ex.reps ?? '')
+      const intensityStr = pending?.intensity ?? (ex.intensity ?? '')
+      const sets = setsStr.trim() === '' ? null : parseInt(setsStr, 10)
+      const reps = repsStr.trim() === '' ? null : repsStr.trim()
+      const intensity = intensityStr.trim() === '' ? null : intensityStr.trim()
+      const { error: err1 } = await updateRoutineExerciseSetsReps(ex.id, Number.isNaN(sets as number) ? null : sets, reps)
+      if (err1) {
+        setErrorExercises(err1)
+        setSavingDayUpdateIdx(null)
+        return
+      }
+      const { error: err2 } = await updateRoutineExerciseIntensity(ex.id, intensity)
+      if (err2) {
+        setErrorExercises(err2)
+        setSavingDayUpdateIdx(null)
+        return
+      }
+      exerciseIdsToClear.push(ex.id)
     }
+    setPendingDayUpdates((prev) => {
+      const next = { ...prev }
+      exerciseIdsToClear.forEach((id) => delete next[id])
+      return next
+    })
+    setSavingDayUpdateIdx(null)
+    refetch()
   }
 
-  async function handleSaveIntensity(exId: string, value: string) {
-    const intensity = value.trim() === '' ? null : value.trim()
-    setErrorExercises(null)
-    setSavingIntensityId(exId)
-    const { error } = await updateRoutineExerciseIntensity(exId, intensity)
-    setSavingIntensityId(null)
-    if (error) setErrorExercises(error)
-    else {
-      setEditingIntensity((prev) => {
-        const next = { ...prev }
-        delete next[exId]
-        return next
-      })
-      refetch()
-    }
+  function hasPendingUpdatesForDay(dayIdx: number): boolean {
+    const day = linearDays[dayIdx]
+    if (!day) return false
+    return day.exercises.some((ex) => ex.id && pendingDayUpdates[ex.id])
   }
 
   async function handleMoveExercise(dayIdx: number, exIdx: number, direction: 'up' | 'down') {
@@ -376,7 +377,7 @@ export default function RoutineDetail() {
       {linearDays.length > 0 && (
         <section className="mb-6">
           <h2 className="text-sm font-medium text-slate-300 mb-2">Ejercicios por día</h2>
-          <p className="text-slate-500 text-xs mb-4">Añade, quita o reordena ejercicios en cada día de la rutina.</p>
+          <p className="text-slate-500 text-xs mb-4">Edita series, repeticiones e intensidad; los cambios se guardan al pulsar &quot;Actualizar día&quot; en cada día.</p>
           {errorExercises && <p className="text-red-400 text-sm mb-3" role="alert">{errorExercises}</p>}
           <div className="space-y-6">
             {linearDays.map((day, dayIdx) => (
@@ -385,12 +386,11 @@ export default function RoutineDetail() {
                 <ul className="space-y-2 mb-3">
                   {day.exercises.map((ex, exIdx) => {
                     const exId = ex.id ?? ''
-                    const local = editingSetsReps[exId]
-                    const setsVal = local?.sets ?? String(ex.sets ?? '')
-                    const repsVal = local?.reps ?? (ex.reps ?? '')
-                    const intensityVal = editingIntensity[exId] ?? (ex.intensity ?? '')
-                    const saving = savingSetsRepsId === exId
-                    const savingIntensity = savingIntensityId === exId
+                    const pending = pendingDayUpdates[exId]
+                    const setsVal = pending?.sets ?? String(ex.sets ?? '')
+                    const repsVal = pending?.reps ?? (ex.reps ?? '')
+                    const intensityVal = pending?.intensity ?? (ex.intensity ?? '')
+                    const daySaving = savingDayUpdateIdx === dayIdx
                     return (
                     <li
                       key={ex.id ?? exIdx}
@@ -405,13 +405,8 @@ export default function RoutineDetail() {
                           max={99}
                           placeholder="S"
                           value={setsVal}
-                          onChange={(e) => setEditingSetsReps((prev) => ({ ...prev, [exId]: { sets: e.target.value, reps: prev[exId]?.reps ?? (ex.reps ?? '') } }))}
-                          onBlur={() => {
-                            if (!ex.id) return
-                            const v = editingSetsRepsRef.current[exId] ?? { sets: String(ex.sets ?? ''), reps: ex.reps ?? '' }
-                            handleSaveSetsReps(ex.id, v.sets, v.reps)
-                          }}
-                          disabled={saving}
+                          onChange={(e) => setPendingDayUpdates((prev) => ({ ...prev, [exId]: { sets: e.target.value, reps: prev[exId]?.reps ?? (ex.reps ?? ''), intensity: prev[exId]?.intensity ?? (ex.intensity ?? '') } }))}
+                          disabled={daySaving}
                           className="w-12 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm text-center"
                         />
                         <label className="sr-only">Repeticiones</label>
@@ -419,13 +414,8 @@ export default function RoutineDetail() {
                           type="text"
                           placeholder="Rep"
                           value={repsVal}
-                          onChange={(e) => setEditingSetsReps((prev) => ({ ...prev, [exId]: { sets: prev[exId]?.sets ?? String(ex.sets ?? ''), reps: e.target.value } }))}
-                          onBlur={() => {
-                            if (!ex.id) return
-                            const v = editingSetsRepsRef.current[exId] ?? { sets: String(ex.sets ?? ''), reps: ex.reps ?? '' }
-                            handleSaveSetsReps(ex.id, v.sets, v.reps)
-                          }}
-                          disabled={saving}
+                          onChange={(e) => setPendingDayUpdates((prev) => ({ ...prev, [exId]: { sets: prev[exId]?.sets ?? String(ex.sets ?? ''), reps: e.target.value, intensity: prev[exId]?.intensity ?? (ex.intensity ?? '') } }))}
+                          disabled={daySaving}
                           className="w-14 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
                         />
                         <label className="sr-only">Intensidad / % / Peso</label>
@@ -433,13 +423,8 @@ export default function RoutineDetail() {
                           type="text"
                           placeholder="%, peso"
                           value={intensityVal}
-                          onChange={(e) => setEditingIntensity((prev) => ({ ...prev, [exId]: e.target.value }))}
-                          onBlur={() => {
-                            if (!ex.id) return
-                            const v = editingIntensityRef.current[exId] ?? (ex.intensity ?? '')
-                            handleSaveIntensity(ex.id, v)
-                          }}
-                          disabled={savingIntensity}
+                          onChange={(e) => setPendingDayUpdates((prev) => ({ ...prev, [exId]: { sets: prev[exId]?.sets ?? String(ex.sets ?? ''), reps: prev[exId]?.reps ?? (ex.reps ?? ''), intensity: e.target.value } }))}
+                          disabled={daySaving}
                           className="w-20 min-h-[36px] px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm"
                           title="% de esfuerzo o peso (ej. 70-75%, 60 kg)"
                         />
@@ -535,6 +520,19 @@ export default function RoutineDetail() {
                     Añadir ejercicio
                   </button>
                 )}
+                <div className="mt-3 pt-3 border-t border-slate-600 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateDay(dayIdx)}
+                    disabled={savingDayUpdateIdx === dayIdx || day.exercises.length === 0}
+                    className="min-h-[40px] px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+                  >
+                    {savingDayUpdateIdx === dayIdx ? 'Guardando...' : 'Actualizar día'}
+                  </button>
+                  {hasPendingUpdatesForDay(dayIdx) && (
+                    <span className="text-slate-500 text-xs">Cambios sin guardar</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
