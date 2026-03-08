@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useExerciseNotes } from '../hooks/useExerciseNotes'
-import { updateExerciseDemo, updateExerciseRest } from '../lib/routineDb'
+import { updateExerciseDemo, updateExerciseRest, updateRoutineExerciseNotes } from '../lib/routineDb'
 import { uploadExerciseImage } from '../lib/exerciseImageStorage'
 import { RestTimer } from './RestTimer'
 import { formatRestLabel } from '../lib/restTimer'
@@ -32,6 +32,9 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
   const [uploadImageError, setUploadImageError] = useState<string | null>(null)
   const [removeVideoError, setRemoveVideoError] = useState<string | null>(null)
   const [savingRest, setSavingRest] = useState(false)
+  const [showEditRoutineNotes, setShowEditRoutineNotes] = useState(false)
+  const [routineNotesValue, setRoutineNotesValue] = useState(exercise.notes ?? '')
+  const [savingRoutineNotes, setSavingRoutineNotes] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const {
     note,
@@ -137,6 +140,18 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
     const { error } = await updateExerciseRest(routineExerciseId, restSeconds)
     setSavingRest(false)
     if (!error) setShowEditRest(false)
+  }
+
+  async function handleSaveRoutineNotes() {
+    if (!routineExerciseId) return
+    setSavingRoutineNotes(true)
+    const notes = routineNotesValue.trim() === '' ? null : routineNotesValue.trim()
+    const { error } = await updateRoutineExerciseNotes(routineExerciseId, notes)
+    setSavingRoutineNotes(false)
+    if (!error) {
+      setShowEditRoutineNotes(false)
+      onDemoUpdated?.()
+    }
   }
 
   const linkToFicha = !editable && routineExerciseId ? `/exercise/${routineExerciseId}` : null
@@ -428,13 +443,64 @@ export function ExerciseCard({ exercise, forDate, routineExerciseId, editable = 
           </div>
         </div>
 
-        {/* Notas de la rutina (Gestionar): siempre visibles cuando el entrenador las ha dejado */}
-        {exercise.notes && exercise.notes.trim() !== '' && (
-          <div className="mt-3 pt-3 border-t border-slate-700">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Indicaciones de la rutina</p>
+        {/* Indicaciones de la rutina: texto libre por ejercicio (descanso, pautas, etc.) */}
+        {(editable && routineExerciseId) || (exercise.notes ?? '').trim() !== '' ? (
+        <div className="mt-3 pt-3 border-t border-slate-700">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Indicaciones de la rutina</p>
+          {editable && routineExerciseId ? (
+            <>
+              {!showEditRoutineNotes ? (
+                <>
+                  {(exercise.notes ?? '').trim() !== '' ? (
+                    <p className="text-slate-300 text-sm mt-1 whitespace-pre-wrap">{exercise.notes}</p>
+                  ) : (
+                    <p className="text-slate-500 text-sm mt-1">Sin indicaciones.</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditRoutineNotes(true)
+                      setRoutineNotesValue(exercise.notes ?? '')
+                    }}
+                    className="mt-2 text-xs text-sky-400 hover:text-sky-300"
+                  >
+                    {(exercise.notes ?? '').trim() !== '' ? 'Editar indicaciones' : 'Añadir indicaciones'}
+                  </button>
+                </>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <textarea
+                    value={routineNotesValue}
+                    onChange={(e) => setRoutineNotesValue(e.target.value)}
+                    placeholder="Ej: Descanso entre series: 2'. Pausa 2&quot; arriba."
+                    rows={3}
+                    className="w-full rounded-lg bg-slate-900 border border-slate-600 px-3 py-2 text-sm text-white placeholder-slate-500"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveRoutineNotes}
+                      disabled={savingRoutineNotes}
+                      className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs text-white hover:bg-sky-500 disabled:opacity-50"
+                    >
+                      {savingRoutineNotes ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowEditRoutineNotes(false); setRoutineNotesValue(exercise.notes ?? '') }}
+                      className="text-xs text-slate-500 hover:text-white"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
             <p className="text-slate-300 text-sm mt-1 whitespace-pre-wrap">{exercise.notes}</p>
-          </div>
-        )}
+          )}
+        </div>
+        ) : null}
 
         <div className="mt-3 pt-3 border-t border-slate-700">
           <button

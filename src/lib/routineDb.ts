@@ -323,6 +323,18 @@ export async function updateRoutineExerciseIntensity(
   return { error: error?.message ?? null }
 }
 
+/** Actualiza las indicaciones/notas de la rutina para un ejercicio (texto libre: descanso, pautas, etc.). */
+export async function updateRoutineExerciseNotes(
+  exerciseId: string,
+  notes: string | null
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('routine_exercises')
+    .update({ notes: notes != null && String(notes).trim() !== '' ? String(notes).trim() : null })
+    .eq('id', exerciseId)
+  return { error: error?.message ?? null }
+}
+
 export interface ExerciseRow {
   id: string
   name: string
